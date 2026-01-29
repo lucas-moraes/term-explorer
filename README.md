@@ -8,7 +8,7 @@ Interactive file explorer for Zsh with fuzzy search powered by [fzf](https://git
 
 ```
 ╭────────────────────────────────────────────────────────────────╮
-│  Enter: Selecionar │ Esc: Sair │ ^R: Atualizar │ ^H: Subir    │
+│  Enter: Selecionar │ Esc: Sair │ ^R: Atualizar │ ^H: Subir     │
 ╰────────────────────────────────────────────────────────────────╯
 📂 ~/projects/term-explorer
                                     │
