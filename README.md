@@ -22,6 +22,8 @@ Interactive file explorer for Zsh with fuzzy search powered by [fzf](https://git
                                     │
 ```
 
+<video src="https://github.com/user-attachments/assets/cd2514dd-49d6-41c9-a656-970fe776b68c"></video>
+
 ## Features
 
 - **Fuzzy Search**: Lightning-fast file filtering with fzf
