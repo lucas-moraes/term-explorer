@@ -12,66 +12,64 @@ This document outlines planned improvements, bug fixes, and new features for ter
 
 ---
 
-## Phase 1: Critical Fixes
+## Phase 1: Critical Fixes (COMPLETED - v1.1.0)
 
 ### 1.1 Dead Code Cleanup
 
 | Priority | Issue | Status |
 |----------|-------|--------|
-| High | Functions `_te_preview`, `_te_get_bat`, `_te_get_file_size` unused after preview removal | Pending |
-| High | Warnings for `bat/eza` in `_te_check_deps` no longer relevant without preview | Pending |
-| Medium | Unused variables: `initial_dir`, `original_dir` in main function | Pending |
+| High | Functions `_te_preview`, `_te_get_bat`, `_te_get_file_size` unused after preview removal | Done |
+| High | Warnings for `bat/eza` in `_te_check_deps` no longer relevant without preview | Done |
+| Medium | Unused variables: `initial_dir`, `original_dir` in main function | Done |
 
-**Solution Options:**
-- **Option A**: Remove all preview-related code
-- **Option B**: Make preview optional with `--preview` flag or `Ctrl-P` toggle (recommended)
+**Solution Applied:** Option A - Removed all preview-related dead code. Preview can be reintroduced in Phase 3 as an optional feature.
 
 ### 1.2 README.md Fixes
 
 | Priority | Issue | Status |
 |----------|-------|--------|
-| High | ASCII demo shows preview panel that was removed | Pending |
-| High | Portuguese text in demo: "Selecionar", "Sair", "Atualizar", "Subir" | Pending |
-| High | States "requires typing 'sim'" but code uses 'yes' | Pending |
-| Medium | `YOUR_USERNAME` placeholder in repository URLs | Pending |
+| High | ASCII demo shows preview panel that was removed | Done |
+| High | Portuguese text in demo: "Selecionar", "Sair", "Atualizar", "Subir" | Done |
+| High | States "requires typing 'sim'" but code uses 'yes' | Done |
+| Medium | `YOUR_USERNAME` placeholder in repository URLs | Skipped (user preference) |
 
 ### 1.3 Robustness Fixes
 
 | Priority | Issue | Solution | Status |
 |----------|-------|----------|--------|
-| High | Files with spaces in name may break | Add proper quoting around `$item` | Pending |
-| High | Special characters in filenames | Escape characters in `_te_actions` | Pending |
-| Medium | Directories without read permission | Add `[[ -r "$item" ]]` check | Pending |
-| Medium | Circular symlinks may cause infinite loop | Limit resolution depth | Pending |
-| Low | Terminal without Unicode support | ASCII icon fallback | Pending |
+| High | Files with spaces in name may break | Add proper quoting around `$item` | Done |
+| High | Special characters in filenames | Added `--` to commands | Done |
+| Medium | Directories without read permission | Add `[[ -r "$item" ]]` check | Done |
+| Medium | Circular symlinks may cause infinite loop | Limit resolution depth (max 10) | Done |
+| Low | Terminal without Unicode support | ASCII icon fallback | Deferred to Phase 2 |
 
 ---
 
-## Phase 2: UX Improvements
+## Phase 2: UX Improvements (COMPLETED - v1.2.0)
 
 ### 2.1 New Keyboard Shortcuts
 
 | Shortcut | Action | Priority | Status |
 |----------|--------|----------|--------|
-| `Ctrl-.` | Toggle hidden files visibility | High | Pending |
-| `Ctrl-P` | Toggle preview panel | High | Pending |
-| `Ctrl-O` | Go back to previous directory | Medium | Pending |
-| `Ctrl-B` | Open bookmarks | Medium | Pending |
-| `Ctrl-F` | Recursive file search | Low | Pending |
+| `Alt-.` | Toggle hidden files visibility | High | Done |
+| `Ctrl-P` | Toggle preview panel | High | Done |
+| `Ctrl-O` | Go back to previous directory | Medium | Done |
+| `Ctrl-B` | Open bookmarks | Medium | Deferred to Phase 3 |
+| `Ctrl-F` | Recursive file search | Low | Done |
 
 ### 2.2 Interface Enhancements
 
 | Feature | Description | Priority | Status |
 |---------|-------------|----------|--------|
-| Item counter | Show "42 items" in header | Medium | Pending |
-| Loading indicator | Spinner for large directories | Medium | Pending |
-| Theme presets | `TERM_EXPLORER_THEME` variable with options | Medium | Pending |
-| Dynamic header | Adjust to terminal width | Low | Pending |
+| Item counter | Show "42 items" in header | Medium | Done |
+| Loading indicator | Spinner for large directories | Medium | Deferred (not needed) |
+| Theme presets | `TERM_EXPLORER_THEME` variable with options | Medium | Done |
+| Dynamic header | Adjust to terminal width | Low | Deferred to Phase 3 |
 
 ### 2.3 Theme Options
 
 ```bash
-# Proposed theme configuration
+# Available themes (implemented)
 export TERM_EXPLORER_THEME="tokyo-night"  # default
 # Options: tokyo-night, dracula, nord, gruvbox, catppuccin, monokai
 ```
@@ -82,23 +80,23 @@ export TERM_EXPLORER_THEME="tokyo-night"  # default
 
 ### 3.1 Optional Preview Panel
 
-Reintroduce preview as an optional feature:
+~~Reintroduce preview as an optional feature:~~ **DONE in v1.2.0**
 
 ```bash
 # Toggle with Ctrl-P or start with preview enabled
-te --preview
-te -p
+# te --preview  # CLI flag not implemented yet
+# te -p         # CLI flag not implemented yet
 
-# Configuration
+# Configuration (implemented)
 export TERM_EXPLORER_PREVIEW=1  # Enable by default
 ```
 
 ### 3.2 Navigation History
 
-```bash
+~~```bash
 # Ctrl-O: Go back to previous directory
 # Stores last 10 visited directories in session
-```
+```~~ **DONE in v1.2.0** (stores up to 50 directories)
 
 ### 3.3 Bookmarks System
 
@@ -134,11 +132,11 @@ export TERM_EXPLORER_PREVIEW=1  # Enable by default
 
 ### 3.6 Recursive Search
 
-```bash
+~~```bash
 # Ctrl-F: Enter search mode
 # Uses fd or find to search recursively
 # Results shown in fzf with path
-```
+```~~ **DONE in v1.2.0**
 
 ---
 
@@ -304,7 +302,8 @@ We welcome contributions! Here's how you can help:
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0.0 | 2026-01-29 | Initial release |
-| 1.1.0 | TBD | Phase 1 fixes |
+| 1.1.0 | 2026-01-29 | Phase 1 fixes (dead code cleanup, README fixes, robustness) |
+| 1.2.0 | 2026-01-29 | Phase 2 UX improvements (new shortcuts, themes, preview, history) |
 | 1.2.0 | TBD | Phase 2 UX improvements |
 | 2.0.0 | TBD | Phase 3 advanced features |
 

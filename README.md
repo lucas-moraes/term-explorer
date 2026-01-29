@@ -2,38 +2,42 @@
 
 Interactive file explorer for Zsh with fuzzy search powered by [fzf](https://github.com/junegunn/fzf).
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Shell](https://img.shields.io/badge/shell-zsh-yellow.svg)
 
 ```
-╭────────────────────────────────────────────────────────────────╮
-│  Enter: Selecionar │ Esc: Sair │ ^R: Atualizar │ ^H: Subir     │
-╰────────────────────────────────────────────────────────────────╯
-📂 ~/projects/term-explorer
-                                    │
-  📁 ..                             │  📄 Arquivo: README.md
-  📁 docs/                          │  📊 Tamanho: 4.2K
-  📁 src/                           │  ────────────────────────
-❯ 📝 README.md                      │  # Term-Explorer
-  📋 package.json                   │
-  🐚 install.sh                     │  Interactive file explorer
-  📜 LICENSE                        │  for Zsh...
-                                    │
-```
+╭──────────────────────────────────────────────────────────────────────────────────╮
+│ Enter: Select │ Esc: Exit │ ^R: Refresh │ ^H: Parent │ M-.: Hidden │ ^P: Preview │
+│ ^O: Go Back   │ ^F: Search                                                       │
+╰──────────────────────────────────────────────────────────────────────────────────╯
+ 📂 ~/projects/term-explorer
+ 📊 7 items  [H:ON] [P:OFF] [←:0]
 
-<video src="https://github.com/user-attachments/assets/cd2514dd-49d6-41c9-a656-970fe776b68c"></video>
+   📁 ..
+   📁 docs/
+   📁 src/
+ ❯ 📝 README.md
+   📋 package.json
+   🐚 install.sh
+   📜 LICENSE
+
+```
 
 ## Features
 
 - **Fuzzy Search**: Lightning-fast file filtering with fzf
-- **Syntax Highlighting**: File preview with bat/batcat
-- **Modern Listing**: Directory preview with eza
+- **File Icons**: Visual file type identification with emoji icons
 - **Deep Navigation**: Seamlessly navigate into directories
 - **Action Menu**: Edit, copy path, view, or delete files
+- **Toggle Preview**: Optional file preview panel (Ctrl-P)
+- **Toggle Hidden Files**: Show/hide hidden files on the fly (Ctrl-.)
+- **Navigation History**: Go back to previous directories (Ctrl-O)
+- **Recursive Search**: Find files anywhere in the tree (Ctrl-F)
+- **Theme Support**: 6 beautiful color themes (Tokyo Night, Dracula, Nord, Gruvbox, Catppuccin, Monokai)
 - **Cross-Platform**: Works on macOS, Linux, and WSL
-- **Tokyo Night Theme**: Beautiful dark color scheme
 - **Zero Config**: Works out of the box
+- **Robust**: Handles spaces in filenames, permission errors, and circular symlinks
 
 ## Requirements
 
@@ -41,10 +45,10 @@ Interactive file explorer for Zsh with fuzzy search powered by [fzf](https://git
 
 - [fzf](https://github.com/junegunn/fzf) - Fuzzy finder
 
-### Optional (Recommended)
+### Optional
 
-- [bat](https://github.com/sharkdp/bat) - Syntax highlighting for file preview
-- [eza](https://github.com/eza-community/eza) - Modern replacement for ls
+- [bat](https://github.com/sharkdp/bat) - Syntax highlighting for file preview and viewing
+- [fd](https://github.com/sharkdp/fd) - Faster recursive file search (Ctrl-F)
 
 ## Installation
 
@@ -81,35 +85,39 @@ source ~/.zshrc
 #### macOS (Homebrew)
 
 ```bash
-brew install fzf bat eza
+brew install fzf
+
+# Optional: for enhanced features
+brew install bat fd
 ```
 
 #### Ubuntu/Debian
 
 ```bash
 sudo apt update
-sudo apt install fzf bat eza
+sudo apt install fzf
 
-# Note: On Debian/Ubuntu, bat may be installed as 'batcat'
-# The script handles this automatically
+# Optional: for enhanced features
+# Note: On Debian/Ubuntu, bat may be installed as 'batcat', fd as 'fdfind'
+sudo apt install bat fd-find
 ```
 
 #### Arch Linux
 
 ```bash
-sudo pacman -S fzf bat eza
+sudo pacman -S fzf
+
+# Optional: for enhanced features
+sudo pacman -S bat fd
 ```
 
 #### Fedora
 
 ```bash
-sudo dnf install fzf bat eza
-```
+sudo dnf install fzf
 
-#### Alpine Linux
-
-```bash
-apk add fzf bat eza
+# Optional: for enhanced features
+sudo dnf install bat fd-find
 ```
 
 ## Usage
@@ -136,6 +144,10 @@ te /var/log
 | `Esc` | Exit explorer |
 | `Ctrl-R` | Refresh file list |
 | `Ctrl-H` | Go to parent directory |
+| `Alt-.` | Toggle hidden files visibility |
+| `Ctrl-P` | Toggle preview panel |
+| `Ctrl-O` | Go back to previous directory |
+| `Ctrl-F` | Recursive file search |
 | `↑` / `↓` | Navigate list |
 | Type | Fuzzy search filter |
 
@@ -149,7 +161,7 @@ When you select a file, an action menu appears:
 | Copy absolute path | Copy full path to clipboard |
 | Copy relative path | Copy relative path to clipboard |
 | View | Open file in pager (less/bat) |
-| Delete | Delete file (requires typing 'sim' to confirm) |
+| Delete | Delete file (requires typing 'yes' to confirm) |
 
 ## Configuration
 
@@ -159,17 +171,35 @@ When you select a file, an action menu appears:
 # Show/hide hidden files (default: 1 = show)
 export TERM_EXPLORER_SHOW_HIDDEN=1
 
+# Enable preview panel by default (default: 0 = off)
+export TERM_EXPLORER_PREVIEW=1
+
+# Set color theme (default: tokyo-night)
+export TERM_EXPLORER_THEME="dracula"
+
 # Set your preferred editor
 export EDITOR=nvim
 ```
 
-### Customizing Colors
+### Available Themes
 
-The script uses the Tokyo Night color theme by default. To customize, modify the `TERM_EXPLORER_FZF_COLORS` variable in `term-explorer.zsh`:
+| Theme | Description |
+|-------|-------------|
+| `tokyo-night` | Default dark theme with purple accents |
+| `dracula` | Classic Dracula dark theme |
+| `nord` | Cool, bluish Arctic-inspired theme |
+| `gruvbox` | Retro groove colors |
+| `catppuccin` | Soothing pastel theme |
+| `monokai` | Classic code editor theme |
+
+Example usage:
 
 ```bash
-typeset -g TERM_EXPLORER_FZF_COLORS="--color=fg:#c0caf5,bg:#1a1b26,hl:#bb9af7"
-# ... add your custom colors
+# Use Dracula theme for this session
+TERM_EXPLORER_THEME=dracula te
+
+# Or set permanently in .zshrc
+export TERM_EXPLORER_THEME="nord"
 ```
 
 ## File Icons
@@ -213,9 +243,9 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 ~/.fzf/install
 ```
 
-### Preview not showing syntax highlighting
+### View action not showing syntax highlighting
 
-Install bat:
+Install bat for enhanced file viewing:
 
 ```bash
 # macOS
@@ -223,21 +253,6 @@ brew install bat
 
 # Ubuntu/Debian (may install as 'batcat')
 sudo apt install bat
-```
-
-### Directory listing looks basic
-
-Install eza:
-
-```bash
-# macOS
-brew install eza
-
-# Ubuntu/Debian
-sudo apt install eza
-
-# Or via cargo
-cargo install eza
 ```
 
 ### Clipboard not working
@@ -256,13 +271,11 @@ sudo apt install wl-clipboard
 
 ### Icons not displaying correctly
 
-Make sure you're using a [Nerd Font](https://www.nerdfonts.com/) in your terminal:
-
-```bash
-# macOS
-brew tap homebrew/cask-fonts
-brew install --cask font-hack-nerd-font
-```
+Make sure your terminal supports Unicode/emoji. For best results, use a modern terminal emulator like:
+- iTerm2 (macOS)
+- Alacritty
+- Kitty
+- Windows Terminal
 
 ## Helper Commands
 
