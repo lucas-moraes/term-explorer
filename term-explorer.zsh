@@ -538,20 +538,19 @@ term-explorer() {
     # Main navigation loop
     while true; do
         # Build header with keyboard shortcuts
-        local header="╭────────────────────────────────────────────────────────────────╮
-│  %F{green}Enter%f: Select │ %F{yellow}Esc%f: Exit │ %F{cyan}^R%f: Refresh │ %F{magenta}^H%f: Parent │
-╰────────────────────────────────────────────────────────────────╯
-%F{blue}📂 $PWD%f"
+        local header="╭─────────────────────────────────────────────────────────────────────────╮
+│  Enter: Select  │  Esc: Exit  │  ^R: Refresh  │  ^H: Parent Directory   │
+╰─────────────────────────────────────────────────────────────────────────╯
+ 📂 $PWD"
 
         # Run fzf with preview
         selection=$(_te_list "$TERM_EXPLORER_SHOW_HIDDEN" | \
             fzf --height=80% \
+                --layout=reverse \
                 --border=rounded \
                 --prompt="❯ " \
                 --header="$header" \
                 --header-lines=0 \
-                --preview="_te_preview {}" \
-                --preview-window=right:50%:wrap:border-left \
                 --bind="ctrl-r:reload(_te_list $TERM_EXPLORER_SHOW_HIDDEN)" \
                 --bind="ctrl-h:become(echo '📁 ..')" \
                 --expect=ctrl-h \
