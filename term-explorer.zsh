@@ -18,9 +18,9 @@
 # ----------------------------------------------------------------------------
 # Global Configuration
 # ----------------------------------------------------------------------------
-typeset -g TERM_EXPLORER_VERSION="1.2.0"
+typeset -g TERM_EXPLORER_VERSION="2.1.0"
 typeset -g TERM_EXPLORER_SHOW_HIDDEN=${TERM_EXPLORER_SHOW_HIDDEN:-1}
-typeset -g TERM_EXPLORER_PREVIEW=${TERM_EXPLORER_PREVIEW:-0}
+typeset -g TERM_EXPLORER_PREVIEW=${TERM_EXPLORER_PREVIEW:-1}
 typeset -g TERM_EXPLORER_THEME=${TERM_EXPLORER_THEME:-"tokyo-night"}
 
 # Navigation history stack
@@ -275,6 +275,113 @@ _te_search_recursive() {
             --ansi)
     
     echo "$result"
+}
+
+# ----------------------------------------------------------------------------
+# _te_bookmarks_file: Get bookmarks file path
+# ----------------------------------------------------------------------------
+_te_bookmarks_file() {
+    echo "${XDG_CONFIG_HOME:-$HOME/.config}/term-explorer/bookmarks"
+}
+
+# ----------------------------------------------------------------------------
+# _te_bookmarks_load: Load all bookmarks
+# Returns: List of bookmarked directories
+# ----------------------------------------------------------------------------
+_te_bookmarks_load() {
+    local bm_file=$(_te_bookmarks_file)
+    [[ -f "$bm_file" ]] && cat "$bm_file" 2>/dev/null || echo ""
+}
+
+# ----------------------------------------------------------------------------
+# _te_bookmarks_save: Save bookmarks
+# Arguments: $@ = directories to save
+# ----------------------------------------------------------------------------
+_te_bookmarks_save() {
+    local bm_file=$(_te_bookmarks_file)
+    mkdir -p "$(dirname "$bm_file")"
+    printf '%s\n' "$@" > "$bm_file" 2>/dev/null
+}
+
+# ----------------------------------------------------------------------------
+# _te_bookmarks_add: Add current directory to bookmarks
+# Returns: 0 on success, 1 on failure
+# ----------------------------------------------------------------------------
+_te_bookmarks_add() {
+    local current_dir="$PWD"
+    local bookmarks=$(_te_bookmarks_load)
+    
+    # Check if already bookmarked
+    if echo "$bookmarks" | grep -qxF "$current_dir"; then
+        print -P "%F{yellow}⚠️  Already bookmarked:%f $current_dir"
+        sleep 1
+        return 1
+    fi
+    
+    # Add bookmark
+    if [[ -n "$bookmarks" ]]; then
+        _te_bookmarks_save "$bookmarks" "$current_dir"
+    else
+        _te_bookmarks_save "$current_dir"
+    fi
+    
+    print -P "%F{green}✅ Bookmarked:%f $current_dir"
+    sleep 0.5
+    return 0
+}
+
+# ----------------------------------------------------------------------------
+# _te_bookmarks_remove: Remove a directory from bookmarks
+# Arguments: $1 = directory to remove
+# Returns: 0 on success, 1 on failure
+# ----------------------------------------------------------------------------
+_te_bookmarks_remove() {
+    local target="$1"
+    local bookmarks=$(_te_bookmarks_load)
+    
+    # Filter out the target directory
+    local new_bookmarks=$(echo "$bookmarks" | grep -vxF "$target")
+    
+    if [[ "$new_bookmarks" == "$bookmarks" ]]; then
+        return 1
+    fi
+    
+    _te_bookmarks_save ${(f)new_bookmarks}
+    return 0
+}
+
+# ----------------------------------------------------------------------------
+# _te_bookmarks_open: Open bookmarks selection menu
+# Returns: Selected directory path or empty
+# ----------------------------------------------------------------------------
+_te_bookmarks_open() {
+    local bookmarks=$(_te_bookmarks_load)
+    
+    if [[ -z "$bookmarks" ]]; then
+        print -P "%F{yellow}📭 No bookmarks yet%f"
+        print -P "%F{yellow}Press Ctrl-D to bookmark current directory%f"
+        sleep 1.5
+        return
+    fi
+    
+    # Format bookmarks for display
+    local formatted=$(echo "$bookmarks" | nl -w2 -s '. ' | sed 's/^/🔖 /')
+    
+    local selected=$(echo "$formatted" | \
+        fzf --height=50% \
+            --layout=reverse \
+            --border=rounded \
+            --prompt="🔖 Bookmark: " \
+            --header="Select a bookmark (Tab to see actions)" \
+            --bind="ctrl-d:execute-silent(echo {..} | sed 's/^.* //' | xargs -r _te_bookmarks_remove && reload)+reload(_te_bookmarks_load | nl -w2 -s '. ' | sed 's/^/🔖 /')+change-header(ctrl-d: Removed bookmark)" \
+            --bind="ctrl-d:execute-silent(echo {..} | sed 's/^.* //' | xargs -r _te_bookmarks_remove && reload)+reload(_te_bookmarks_load | nl -w2 -s '. ' | sed 's/^/🔖 /')+change-header(ctrl-d: Removed bookmark)" \
+            $TERM_EXPLORER_FZF_COLORS \
+            --ansi)
+    
+    if [[ -n "$selected" ]]; then
+        # Extract directory path (remove number prefix and bookmark icon)
+        echo "$selected" | sed 's/^🔖 [0-9]*\. //'
+    fi
 }
 
 # ----------------------------------------------------------------------------
@@ -586,6 +693,230 @@ _te_actions() {
 }
 
 # ----------------------------------------------------------------------------
+# _te_quick_actions: Quick actions menu (create, rename, move, copy)
+# ----------------------------------------------------------------------------
+_te_quick_actions() {
+    local current_dir="$PWD"
+    
+    local actions=(
+        "📄 Create new file"
+        "📁 Create new directory"
+        "🔄 Rename item"
+        "➡️  Move item"
+        "📋 Copy item"
+        "❌ Cancel"
+    )
+    
+    local action=$(printf '%s\n' "${actions[@]}" | \
+        fzf --height=40% \
+            --layout=reverse \
+            --border=rounded \
+            --prompt="Action: " \
+            --header="Quick Actions" \
+            $TERM_EXPLORER_FZF_COLORS \
+            --no-preview \
+            --no-sort)
+    
+    case "$action" in
+        *"Create new file"*)
+            echo ""
+            print -Pn "%F{cyan}Enter filename:%f "
+            local filename
+            read -r filename
+            if [[ -n "$filename" ]]; then
+                if touch -- "$filename" 2>/dev/null; then
+                    print -P "%F{green}✅ Created:%f $filename"
+                else
+                    print -P "%F{red}❌ Error creating file%f"
+                fi
+            fi
+            sleep 0.5
+            ;;
+            
+        *"Create new directory"*)
+            echo ""
+            print -Pn "%F{cyan}Enter directory name:%f "
+            local dirname
+            read -r dirname
+            if [[ -n "$dirname" ]]; then
+                if mkdir -- "$dirname" 2>/dev/null; then
+                    print -P "%F{green}✅ Created directory:%f $dirname"
+                else
+                    print -P "%F{red}❌ Error creating directory%f"
+                fi
+            fi
+            sleep 0.5
+            ;;
+            
+        *"Rename"*)
+            echo ""
+            print -Pn "%F{cyan}Enter item to rename:%f "
+            local oldname
+            read -r oldname
+            if [[ -n "$oldname" && -e "$oldname" ]]; then
+                print -Pn "%F{cyan}Enter new name:%f "
+                local newname
+                read -r newname
+                if [[ -n "$newname" ]]; then
+                    if mv -- "$oldname" "$newname" 2>/dev/null; then
+                        print -P "%F{green}✅ Renamed%f"
+                    else
+                        print -P "%F{red}❌ Error renaming%f"
+                    fi
+                fi
+            else
+                print -P "%F{red}❌ Item not found:%f $oldname"
+            fi
+            sleep 0.5
+            ;;
+            
+        *"Move"*)
+            echo ""
+            print -Pn "%F{cyan}Enter item to move:%f "
+            local item
+            read -r item
+            if [[ -n "$item" && -e "$item" ]]; then
+                print -Pn "%F{cyan}Enter destination path:%f "
+                local dest
+                read -r dest
+                if [[ -n "$dest" ]]; then
+                    if mv -- "$item" "$dest" 2>/dev/null; then
+                        print -P "%F{green}✅ Moved%f"
+                    else
+                        print -P "%F{red}❌ Error moving%f"
+                    fi
+                fi
+            else
+                print -P "%F{red}❌ Item not found:%f $item"
+            fi
+            sleep 0.5
+            ;;
+            
+        *"Copy"*)
+            echo ""
+            print -Pn "%F{cyan}Enter item to copy:%f "
+            local item
+            read -r item
+            if [[ -n "$item" && -e "$item" ]]; then
+                print -Pn "%F{cyan}Enter destination path:%f "
+                local dest
+                read -r dest
+                if [[ -n "$dest" ]]; then
+                    if [[ -d "$item" ]]; then
+                        if cp -r -- "$item" "$dest" 2>/dev/null; then
+                            print -P "%F{green}✅ Copied directory%f"
+                        else
+                            print -P "%F{red}❌ Error copying%f"
+                        fi
+                    else
+                        if cp -- "$item" "$dest" 2>/dev/null; then
+                            print -P "%F{green}✅ Copied%f"
+                        else
+                            print -P "%F{red}❌ Error copying%f"
+                        fi
+                    fi
+                fi
+            else
+                print -P "%F{red}❌ Item not found:%f $item"
+            fi
+            sleep 0.5
+            ;;
+            
+        *"Cancel"*|"")
+            return
+            ;;
+    esac
+}
+
+# ----------------------------------------------------------------------------
+# _te_dir_actions: Action menu for selected directory
+# Arguments: $1 = directory name
+# ----------------------------------------------------------------------------
+_te_dir_actions() {
+    local dir="$1"
+    local abs_path="$PWD/$dir"
+    
+    local actions=(
+        "📝 Rename directory"
+        "📋 Copy absolute path"
+        "📋 Copy relative path"
+        "🗑️  Delete directory"
+        "❌ Cancel"
+    )
+    
+    local action=$(printf '%s\n' "${actions[@]}" | \
+        fzf --height=40% \
+            --layout=reverse \
+            --border=rounded \
+            --prompt="Action: " \
+            --header="📁 $dir" \
+            $TERM_EXPLORER_FZF_COLORS \
+            --no-preview \
+            --no-sort)
+    
+    case "$action" in
+        *"Rename"*)
+            echo ""
+            print -Pn "%F{cyan}Enter new name for%f $dir: "
+            local newname
+            read -r newname
+            if [[ -n "$newname" ]]; then
+                if mv -- "$dir" "$newname" 2>/dev/null; then
+                    print -P "%F{green}✅ Renamed to%f $newname"
+                else
+                    print -P "%F{red}❌ Error renaming%f"
+                fi
+            fi
+            sleep 0.5
+            ;;
+            
+        *"absolute"*)
+            if _te_copy "$abs_path"; then
+                print -P "%F{green}✅ Absolute path copied:%f"
+                print -P "   %F{cyan}$abs_path%f"
+            fi
+            sleep 1
+            ;;
+            
+        *"relative"*)
+            if _te_copy "$dir"; then
+                print -P "%F{green}✅ Relative path copied:%f"
+                print -P "   %F{cyan}$dir%f"
+            fi
+            sleep 1
+            ;;
+            
+        *"Delete"*)
+            echo ""
+            print -P "%F{red}%B⚠️  WARNING: You are about to delete directory:%b%f"
+            print -P "   %F{yellow}$abs_path%f"
+            echo ""
+            print -P "%F{red}This action is irreversible!%f"
+            echo ""
+            print -Pn "%F{yellow}Type 'yes' to confirm: %f"
+            
+            local confirmation
+            read -r confirmation
+            
+            if [[ "$confirmation" == "yes" ]]; then
+                if rm -rf -- "$dir" 2>/dev/null; then
+                    print -P "%F{green}✅ Directory deleted successfully%f"
+                else
+                    print -P "%F{red}❌ Error deleting directory%f"
+                fi
+            else
+                print -P "%F{blue}❌ Deletion cancelled%f"
+            fi
+            sleep 1
+            ;;
+            
+        *"Cancel"*|"")
+            return
+            ;;
+    esac
+}
+
+# ----------------------------------------------------------------------------
 # term-explorer: Main function
 # Arguments: $1 = initial directory (optional, defaults to current)
 # ----------------------------------------------------------------------------
@@ -634,8 +965,8 @@ term-explorer() {
         
         # Build header with keyboard shortcuts
         local header="╭──────────────────────────────────────────────────────────────────────────────────╮
-│ Enter: Select │ Esc: Exit │ ^R: Refresh │ ^H: Parent │ M-.: Hidden │ ^P: Preview │
-│ ^O: Go Back   │ ^F: Search                                                       │
+│ Enter: Select │ Esc: Exit │ ^R: Refresh │ ^H: Parent │ ^B: Bookmarks  │
+│ M-.: Hidden   │ ^P: Preview│ ^O: Back   │ ^F: Search │ ^Q: Quick Act   │
 ╰──────────────────────────────────────────────────────────────────────────────────╯
  📂 $PWD
  📊 $item_count items  $hidden_status $preview_status $history_count"
@@ -663,7 +994,7 @@ term-explorer() {
             --header-lines=0
             --bind="ctrl-r:reload(_te_list $show_hidden)"
             --bind="ctrl-h:become(echo 'ctrl-h'$'\\n''📁 ..')"
-            --expect="ctrl-h,alt-.,ctrl-p,ctrl-o,ctrl-f"
+            --expect="ctrl-h,alt-.,ctrl-p,ctrl-o,ctrl-f,ctrl-b,ctrl-q"
             $TERM_EXPLORER_FZF_COLORS
             --ansi
         )
@@ -738,6 +1069,24 @@ term-explorer() {
             continue
         fi
         
+        # Handle Ctrl-B (open bookmarks)
+        if [[ "$expected_key" == "ctrl-b" ]]; then
+            local bookmark=$(_te_bookmarks_open)
+            if [[ -n "$bookmark" && -d "$bookmark" ]]; then
+                _te_history_push "$PWD"
+                cd "$bookmark"
+                print -P "%F{green}🔖 Navigated to:%f $bookmark"
+                sleep 0.3
+            fi
+            continue
+        fi
+        
+        # Handle Ctrl-Q (quick actions)
+        if [[ "$expected_key" == "ctrl-q" ]]; then
+            _te_quick_actions
+            continue
+        fi
+        
         # Handle Ctrl-H
         if [[ "$expected_key" == "ctrl-h" || "$selection" == "📁 .." ]]; then
             if [[ "$PWD" != "/" ]]; then
@@ -767,13 +1116,12 @@ term-explorer() {
             fi
             
         elif [[ -d "$item" ]]; then
-            # Check read permission before entering
+            # Show directory action menu
+            _te_dir_actions "$item"
+            # Check read permission before entering (user can choose from action menu)
             if [[ -r "$item" ]]; then
                 _te_history_push "$PWD"
                 cd -- "$item"
-            else
-                print -P "%F{red}❌ Permission denied:%f $item"
-                sleep 1
             fi
             
         elif [[ -f "$item" ]]; then
@@ -861,6 +1209,9 @@ KEYBOARD SHORTCUTS:
     Ctrl-P      Toggle preview panel
     Ctrl-O      Go back to previous directory
     Ctrl-F      Recursive file search
+    Ctrl-B      Open bookmarks menu
+    Ctrl-D      Add current directory to bookmarks (in bookmarks menu)
+    Ctrl-Q      Quick actions (create, rename, move, copy)
     ↑/↓         Navigate list
     Type        Fuzzy search filter
 
@@ -870,9 +1221,26 @@ FILE ACTIONS:
     👁  View         View file content with pager
     🗑️  Delete       Delete file (with confirmation)
 
+DIRECTORY ACTIONS:
+    📝 Rename       Rename directory
+    📋 Copy path    Copy absolute or relative path to clipboard
+    🗑️  Delete       Delete directory (with confirmation)
+
+QUICK ACTIONS (Ctrl-Q):
+    📄 Create file        Create new file
+    📁 Create directory  Create new directory
+    🔄 Rename            Rename any item
+    ➡️  Move             Move item to another location
+    📋 Copy              Copy item to another location
+
+BOOKMARKS (Ctrl-B):
+    📖 Bookmarks are stored in ~/.config/term-explorer/bookmarks
+    🔖 Select bookmark to navigate to it
+    🗑️  Press Ctrl-D on a bookmark to remove it
+
 CONFIGURATION:
     TERM_EXPLORER_SHOW_HIDDEN=1    Show hidden files (default: 1)
-    TERM_EXPLORER_PREVIEW=0        Show preview panel (default: 0)
+    TERM_EXPLORER_PREVIEW=1        Show preview panel (default: 1)
     TERM_EXPLORER_THEME=tokyo-night  Color theme
     EDITOR=vim                     Editor for file editing
 

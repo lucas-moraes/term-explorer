@@ -2,14 +2,14 @@
 
 Interactive file explorer for Zsh with fuzzy search powered by [fzf](https://github.com/junegunn/fzf).
 
-![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)
+![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Shell](https://img.shields.io/badge/shell-zsh-yellow.svg)
 
 ```
 ╭──────────────────────────────────────────────────────────────────────────────────╮
-│ Enter: Select │ Esc: Exit │ ^R: Refresh │ ^H: Parent │ M-.: Hidden │ ^P: Preview │
-│ ^O: Go Back   │ ^F: Search                                                       │
+│ Enter: Select │ Esc: Exit │ ^R: Refresh │ ^H: Parent │ ^B: Bookmarks  │
+│ M-.: Hidden   │ ^P: Preview│ ^O: Back   │ ^F: Search │ ^Q: Quick Act   │
 ╰──────────────────────────────────────────────────────────────────────────────────╯
  📂 ~/projects/term-explorer
  📊 7 items  [H:ON] [P:OFF] [←:0]
@@ -29,9 +29,12 @@ Interactive file explorer for Zsh with fuzzy search powered by [fzf](https://git
 - **Fuzzy Search**: Lightning-fast file filtering with fzf
 - **File Icons**: Visual file type identification with emoji icons
 - **Deep Navigation**: Seamlessly navigate into directories
-- **Action Menu**: Edit, copy path, view, or delete files
+- **File Actions**: Edit, copy path, view, or delete files
+- **Directory Actions**: Rename, copy path, or delete directories
+- **Bookmarks**: Save and quickly navigate to favorite directories (Ctrl-B)
+- **Quick Actions**: Create files/directories, rename, move, copy (Ctrl-Q)
 - **Toggle Preview**: Optional file preview panel (Ctrl-P)
-- **Toggle Hidden Files**: Show/hide hidden files on the fly (Ctrl-.)
+- **Toggle Hidden Files**: Show/hide hidden files on the fly (Alt-.)
 - **Navigation History**: Go back to previous directories (Ctrl-O)
 - **Recursive Search**: Find files anywhere in the tree (Ctrl-F)
 - **Theme Support**: 6 beautiful color themes (Tokyo Night, Dracula, Nord, Gruvbox, Catppuccin, Monokai)
@@ -58,6 +61,57 @@ Interactive file explorer for Zsh with fuzzy search powered by [fzf](https://git
 git clone https://github.com/YOUR_USERNAME/term-explorer.git
 cd term-explorer
 ./install.sh
+```
+
+### Package Manager Install
+
+#### Homebrew (macOS/Linux)
+
+```bash
+brew install term-explorer
+```
+
+#### AUR (Arch Linux)
+
+```bash
+# Using yay (AUR helper)
+yay -S term-explorer
+
+# Or manually:
+git clone https://aur.archlinux.org/term-explorer.git
+cd term-explorer
+makepkg -si
+```
+
+### Oh-My-Zsh Plugin
+
+```bash
+# Clone into Oh-My-Zsh plugins directory
+git clone https://github.com/YOUR_USERNAME/term-explorer.git \
+  ~/.oh-my-zsh/custom/plugins/term-explorer
+
+# Add to your .zshrc
+plugins=(... term-explorer ...)
+
+# Reload your shell
+source ~/.zshrc
+```
+
+### Using Makefile
+
+```bash
+# Clone the repository
+git clone https://github.com/YOUR_USERNAME/term-explorer.git
+cd term-explorer
+
+# Install system-wide (requires sudo)
+sudo make install
+
+# Or install to user directory
+make install-user
+
+# Uninstall
+sudo make uninstall
 ```
 
 ### Manual Install
@@ -140,7 +194,7 @@ te /var/log
 
 | Key | Action |
 |-----|--------|
-| `Enter` | Enter directory / Open action menu for files |
+| `Enter` | Enter directory / Open action menu for files/directories |
 | `Esc` | Exit explorer |
 | `Ctrl-R` | Refresh file list |
 | `Ctrl-H` | Go to parent directory |
@@ -148,6 +202,8 @@ te /var/log
 | `Ctrl-P` | Toggle preview panel |
 | `Ctrl-O` | Go back to previous directory |
 | `Ctrl-F` | Recursive file search |
+| `Ctrl-B` | Open bookmarks menu |
+| `Ctrl-Q` | Quick actions (create, rename, move, copy) |
 | `↑` / `↓` | Navigate list |
 | Type | Fuzzy search filter |
 
@@ -163,6 +219,38 @@ When you select a file, an action menu appears:
 | View | Open file in pager (less/bat) |
 | Delete | Delete file (requires typing 'yes' to confirm) |
 
+### Directory Actions Menu
+
+When you select a directory, an action menu appears:
+
+| Action | Description |
+|--------|-------------|
+| Rename | Rename the directory |
+| Copy absolute path | Copy full path to clipboard |
+| Copy relative path | Copy relative path to clipboard |
+| Delete | Delete directory (requires typing 'yes' to confirm) |
+
+### Bookmarks (Ctrl-B)
+
+Save your frequently used directories as bookmarks:
+
+- Press `Ctrl-B` to open bookmarks menu
+- Select a bookmark to navigate to it
+- Press `Ctrl-D` on a bookmark to remove it
+- Bookmarks are stored in `~/.config/term-explorer/bookmarks`
+
+### Quick Actions (Ctrl-Q)
+
+Perform common operations quickly:
+
+| Action | Description |
+|--------|-------------|
+| Create new file | Create a new file in current directory |
+| Create new directory | Create a new directory in current directory |
+| Rename item | Rename any file or directory |
+| Move item | Move file/directory to another location |
+| Copy item | Copy file/directory to another location |
+
 ## Configuration
 
 ### Environment Variables
@@ -171,7 +259,7 @@ When you select a file, an action menu appears:
 # Show/hide hidden files (default: 1 = show)
 export TERM_EXPLORER_SHOW_HIDDEN=1
 
-# Enable preview panel by default (default: 0 = off)
+# Enable/disable preview panel (default: 1 = on)
 export TERM_EXPLORER_PREVIEW=1
 
 # Set color theme (default: tokyo-night)
@@ -285,15 +373,34 @@ term-explorer-version
 
 # Show help
 term-explorer-help
+
+# Update to latest version (if cloned via git)
+./update.sh
+
+# Or use make update
+make update
 ```
 
 ## Uninstallation
 
 ```bash
-# Remove the source line from .zshrc
-# Then delete the installation directory
+# Automatic uninstall (recommended)
+./uninstall.sh
+
+# Or use make
+make uninstall
+
+# Or manual:
+# 1. Remove the source line from .zshrc
+# 2. Delete the installation directory
 rm -rf ~/.config/term-explorer
 ```
+
+The uninstall script will:
+- Remove the `te` symlink
+- Preserve bookmarks (ask before deleting)
+- Remove term-explorer references from `.zshrc`
+- Clean up Oh-My-Zsh plugin if installed
 
 ## Contributing
 

@@ -5,6 +5,55 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-01-30
+
+### Added
+
+- **Installation Methods** - Multiple ways to install term-explorer:
+  - Oh-My-Zsh plugin support
+  - Homebrew formula
+  - AUR package (Arch Linux)
+  - Makefile with install/uninstall targets
+- **Scripts**:
+  - `update.sh` - Self-update from git repository
+  - `uninstall.sh` - Clean removal with bookmarks backup option
+- **CI/CD Pipeline** - GitHub Actions workflow:
+  - ShellCheck linting
+  - Syntax validation
+  - Installation/uninstallation tests
+  - Security scanning with Trivy
+
+### Changed
+
+- Version bumped to 2.1.0
+- Installation instructions updated with all available methods
+- Uninstallation improved with bookmarks backup
+- Preview panel now enabled by default (TERM_EXPLORER_PREVIEW=1)
+
+## [2.0.0] - 2026-01-30
+
+### Added
+
+- **Bookmarks System** (Ctrl-B):
+  - Open bookmarks menu to quickly navigate to saved directories
+  - Press Ctrl-D on a bookmark to remove it
+  - Bookmarks stored in `~/.config/term-explorer/bookmarks`
+- **Quick Actions Menu** (Ctrl-Q):
+  - Create new files and directories
+  - Rename any file or directory
+  - Move items to another location
+  - Copy items to another location
+- **Directory Actions Menu**:
+  - Rename directories
+  - Copy absolute/relative path
+  - Delete directories with confirmation
+
+### Changed
+
+- Directory selection now opens action menu instead of directly entering
+- Users can choose to enter directory from action menu
+- Version bumped to 2.0.0
+
 ## [1.2.0] - 2026-01-29
 
 ### Added

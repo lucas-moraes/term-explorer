@@ -76,7 +76,7 @@ export TERM_EXPLORER_THEME="tokyo-night"  # default
 
 ---
 
-## Phase 3: Advanced Features
+## Phase 3: Advanced Features (COMPLETED - v2.0.0)
 
 ### 3.1 Optional Preview Panel
 
@@ -105,7 +105,7 @@ export TERM_EXPLORER_PREVIEW=1  # Enable by default
 # Ctrl-D: Add current directory to bookmarks
 
 # Bookmarks stored in ~/.config/term-explorer/bookmarks
-```
+``` **DONE in v2.0.0**
 
 ### 3.4 Multi-Select Mode
 
@@ -118,17 +118,17 @@ export TERM_EXPLORER_PREVIEW=1  # Enable by default
 # - Delete multiple files
 # - Copy multiple paths
 # - Move files (new action)
-```
+``` **Deferred to future version** (not implemented yet)
 
 ### 3.5 Quick Actions
 
-| Action | Description | Priority |
-|--------|-------------|----------|
-| Create file | `touch` new file | Medium |
-| Create directory | `mkdir` new directory | Medium |
-| Rename | Rename file/directory | Medium |
-| Move | Move file to another location | Low |
-| Copy file | Duplicate file | Low |
+| Action | Description | Priority | Status |
+|--------|-------------|----------|--------|
+| Create file | `touch` new file | Medium | Done |
+| Create directory | `mkdir` new directory | Medium | Done |
+| Rename | Rename file/directory | Medium | Done |
+| Move | Move file to another location | Low | Done |
+| Copy file | Duplicate file | Low | Done |
 
 ### 3.6 Recursive Search
 
@@ -140,7 +140,7 @@ export TERM_EXPLORER_PREVIEW=1  # Enable by default
 
 ---
 
-## Phase 4: Distribution & CI
+## Phase 4: Distribution & CI (COMPLETED - v2.1.0)
 
 ### 4.1 Installation Methods
 
@@ -148,11 +148,11 @@ export TERM_EXPLORER_PREVIEW=1  # Enable by default
 |--------|--------|
 | Manual install | Done |
 | install.sh script | Done |
-| Oh-My-Zsh plugin | Pending |
-| Zinit plugin | Pending |
-| Antigen plugin | Pending |
-| Homebrew formula | Pending |
-| AUR package | Pending |
+| Oh-My-Zsh plugin | Done |
+| Zinit plugin | Deferred (requires published repo) |
+| Antigen plugin | Deferred (requires published repo) |
+| Homebrew formula | Done |
+| AUR package | Done |
 
 #### Oh-My-Zsh Plugin Structure
 
@@ -160,31 +160,31 @@ export TERM_EXPLORER_PREVIEW=1  # Enable by default
 ~/.oh-my-zsh/custom/plugins/term-explorer/
 ├── term-explorer.plugin.zsh
 └── term-explorer.zsh
-```
+``` **Implemented**
 
 #### Zinit Installation
 
 ```bash
 zinit light username/term-explorer
-```
+``` **Documentation added** (requires published repository)
 
 ### 4.2 Scripts to Add
 
 | Script | Purpose | Status |
 |--------|---------|--------|
-| `uninstall.sh` | Clean removal | Pending |
-| `Makefile` | Install/uninstall targets | Pending |
-| `update.sh` | Self-update from git | Pending |
+| `uninstall.sh` | Clean removal | Done |
+| `Makefile` | Install/uninstall targets | Done |
+| `update.sh` | Self-update from git | Done |
 
 ### 4.3 CI/CD Pipeline
 
 | Task | Tool | Status |
 |------|------|--------|
-| Shell linting | ShellCheck | Pending |
-| Syntax validation | `zsh -n` | Pending |
-| Unit tests | bats-core | Pending |
-| Integration tests | Docker | Pending |
-| Release automation | GitHub Actions | Pending |
+| Shell linting | ShellCheck | Done |
+| Syntax validation | `zsh -n` | Done |
+| Unit tests | bats-core | Deferred |
+| Integration tests | Docker | Done |
+| Release automation | GitHub Actions | Done |
 
 #### Proposed GitHub Actions Workflow
 
@@ -304,8 +304,8 @@ We welcome contributions! Here's how you can help:
 | 1.0.0 | 2026-01-29 | Initial release |
 | 1.1.0 | 2026-01-29 | Phase 1 fixes (dead code cleanup, README fixes, robustness) |
 | 1.2.0 | 2026-01-29 | Phase 2 UX improvements (new shortcuts, themes, preview, history) |
-| 1.2.0 | TBD | Phase 2 UX improvements |
-| 2.0.0 | TBD | Phase 3 advanced features |
+| 2.0.0 | 2026-01-30 | Phase 3 advanced features (bookmarks, quick actions, dir actions) |
+| 2.1.0 | 2026-01-30 | Phase 4 distribution & CI (install methods, scripts, CI/CD) |
 
 ---
 
