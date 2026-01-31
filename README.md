@@ -7,20 +7,20 @@ Interactive file explorer for Zsh with fuzzy search powered by [fzf](https://git
 ![Shell](https://img.shields.io/badge/shell-zsh-yellow.svg)
 
 ```
-╭──────────────────────────────────────────────────────────────────────────────────╮
-│ Enter: Select │ Esc: Exit  │ ^R: Refresh │ ^H: Parent │ ^B: Bookmarks            │
-│ M-.: Hidden   │ ^P: Preview│ ^O: Back    │ ^F: Search │ ^Q: Quick Act            │
-╰──────────────────────────────────────────────────────────────────────────────────╯
- 📂 ~/projects/term-explorer
- 📊 7 items  [H:ON] [P:OFF] [←:0]
-
-   📁 ..
-   📁 docs/
-   📁 src/
- ❯ 📝 README.md
-   📋 package.json
-   🐚 install.sh
-   📜 LICENSE
+╭────────────────────────────────────────────────────────────────╮
+│  Enter: Selecionar │ Esc: Sair │ ^R: Atualizar │ ^H: Subir     │
+╰────────────────────────────────────────────────────────────────╯
+📂 ~/projects/term-explorer
+                                    │
+  📁 ..                             │  📄 Arquivo: README.md
+  📁 docs/                          │  📊 Tamanho: 4.2K
+  📁 src/                           │  ────────────────────────
+❯ 📝 README.md                      │  # Term-Explorer
+  📋 package.json                   │
+  🐚 install.sh                     │  Interactive file explorer
+  📜 LICENSE                        │  for Zsh...
+                                    │
+```
 
 ```
 
