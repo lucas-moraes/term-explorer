@@ -961,10 +961,10 @@ term-explorer() {
         
         # Build header with keyboard shortcuts
         local header="
-╭──────────────────────────────────────────────────────────────────────────────────╮
-│ Enter: Select │ Esc: Exit  │ ^R: Refresh │ ^H: Parent │ ^B: Bookmarks            │
-│ M-.: Hidden   │ ^P: Preview│ ^O: Back    │ ^F: Search │ ^Q: Quick Act            │
-╰──────────────────────────────────────────────────────────────────────────────────╯
+╭───────────────────────────────────────────────────────────--────────────╮
+│ Enter: Select │ Esc: Exit    │ ^R: Refresh │ ^H: Parent │ ^B: Bookmarks │
+│ M-.: Hidden   │ ^P: Preview  │ ^O: Back    │ ^F: Search │ ^Q: Quick Act │
+╰─────────────────────────────────────────────────────────────--──────────╯
  📂 $PWD
  📊 $item_count items  $hidden_status $preview_status $history_count"
 
