@@ -7,9 +7,10 @@ Interactive file explorer for Zsh with fuzzy search powered by [fzf](https://git
 ![Shell](https://img.shields.io/badge/shell-zsh-yellow.svg)
 
 ```
-╭────────────────────────────────────────────────────────────────╮
-│  Enter: Selecionar │ Esc: Sair │ ^R: Atualizar │ ^H: Subir     │
-╰────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────────────────────────────────╮
+│ Enter: Select │ Esc: Exit  │ ^R: Refresh │ ^H: Parent │ ^B: Bookmarks            │
+│ M-.: Hidden   │ ^P: Preview│ ^O: Back    │ ^F: Search │ ^Q: Quick Act            │
+╰──────────────────────────────────────────────────────────────────────────────────╯
 📂 ~/projects/term-explorer
                                     │
   📁 ..                             │  📄 Arquivo: README.md
