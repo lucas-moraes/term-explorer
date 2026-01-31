@@ -20,7 +20,7 @@ detect_install_type() {
     # Check if installed via package manager
     if command -v brew &>/dev/null && brew list term-explorer &>/dev/null; then
         install_type="brew"
-    elif pacman -Qi term-explorer &>/dev/null 2>&1; then
+    elif command -v pacman &>/dev/null && pacman -Qi term-explorer &>/dev/null 2>&1; then
         install_type="aur"
     # Check if installed via Makefile
     elif [[ -f "/usr/local/bin/te" ]] || [[ -f "$HOME/.local/bin/te" ]]; then
