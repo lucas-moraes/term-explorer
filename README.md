@@ -8,8 +8,8 @@ Interactive file explorer for Zsh with fuzzy search powered by [fzf](https://git
 
 ```
 ╭──────────────────────────────────────────────────────────────────────────────────╮
-│ Enter: Select │ Esc: Exit │ ^R: Refresh │ ^H: Parent │ ^B: Bookmarks  │
-│ M-.: Hidden   │ ^P: Preview│ ^O: Back   │ ^F: Search │ ^Q: Quick Act   │
+│ Enter: Select │ Esc: Exit  │ ^R: Refresh │ ^H: Parent │ ^B: Bookmarks            │
+│ M-.: Hidden   │ ^P: Preview│ ^O: Back    │ ^F: Search │ ^Q: Quick Act            │
 ╰──────────────────────────────────────────────────────────────────────────────────╯
  📂 ~/projects/term-explorer
  📊 7 items  [H:ON] [P:OFF] [←:0]
@@ -192,43 +192,43 @@ te /var/log
 
 ### Keyboard Shortcuts
 
-| Key | Action |
-|-----|--------|
-| `Enter` | Enter directory / Open action menu for files/directories |
-| `Esc` | Exit explorer |
-| `Ctrl-R` | Refresh file list |
-| `Ctrl-H` | Go to parent directory |
-| `Alt-.` | Toggle hidden files visibility |
-| `Ctrl-P` | Toggle preview panel |
-| `Ctrl-O` | Go back to previous directory |
-| `Ctrl-F` | Recursive file search |
-| `Ctrl-B` | Open bookmarks menu |
-| `Ctrl-Q` | Quick actions (create, rename, move, copy) |
-| `↑` / `↓` | Navigate list |
-| Type | Fuzzy search filter |
+| Key       | Action                                                   |
+| --------- | -------------------------------------------------------- |
+| `Enter`   | Enter directory / Open action menu for files/directories |
+| `Esc`     | Exit explorer                                            |
+| `Ctrl-R`  | Refresh file list                                        |
+| `Ctrl-H`  | Go to parent directory                                   |
+| `Alt-.`   | Toggle hidden files visibility                           |
+| `Ctrl-P`  | Toggle preview panel                                     |
+| `Ctrl-O`  | Go back to previous directory                            |
+| `Ctrl-F`  | Recursive file search                                    |
+| `Ctrl-B`  | Open bookmarks menu                                      |
+| `Ctrl-Q`  | Quick actions (create, rename, move, copy)               |
+| `↑` / `↓` | Navigate list                                            |
+| Type      | Fuzzy search filter                                      |
 
 ### File Actions Menu
 
 When you select a file, an action menu appears:
 
-| Action | Description |
-|--------|-------------|
-| Edit | Open file in `$EDITOR` (defaults to vim) |
-| Copy absolute path | Copy full path to clipboard |
-| Copy relative path | Copy relative path to clipboard |
-| View | Open file in pager (less/bat) |
-| Delete | Delete file (requires typing 'yes' to confirm) |
+| Action             | Description                                    |
+| ------------------ | ---------------------------------------------- |
+| Edit               | Open file in `$EDITOR` (defaults to vim)       |
+| Copy absolute path | Copy full path to clipboard                    |
+| Copy relative path | Copy relative path to clipboard                |
+| View               | Open file in pager (less/bat)                  |
+| Delete             | Delete file (requires typing 'yes' to confirm) |
 
 ### Directory Actions Menu
 
 When you select a directory, an action menu appears:
 
-| Action | Description |
-|--------|-------------|
-| Rename | Rename the directory |
-| Copy absolute path | Copy full path to clipboard |
-| Copy relative path | Copy relative path to clipboard |
-| Delete | Delete directory (requires typing 'yes' to confirm) |
+| Action             | Description                                         |
+| ------------------ | --------------------------------------------------- |
+| Rename             | Rename the directory                                |
+| Copy absolute path | Copy full path to clipboard                         |
+| Copy relative path | Copy relative path to clipboard                     |
+| Delete             | Delete directory (requires typing 'yes' to confirm) |
 
 ### Bookmarks (Ctrl-B)
 
@@ -243,13 +243,13 @@ Save your frequently used directories as bookmarks:
 
 Perform common operations quickly:
 
-| Action | Description |
-|--------|-------------|
-| Create new file | Create a new file in current directory |
+| Action               | Description                                 |
+| -------------------- | ------------------------------------------- |
+| Create new file      | Create a new file in current directory      |
 | Create new directory | Create a new directory in current directory |
-| Rename item | Rename any file or directory |
-| Move item | Move file/directory to another location |
-| Copy item | Copy file/directory to another location |
+| Rename item          | Rename any file or directory                |
+| Move item            | Move file/directory to another location     |
+| Copy item            | Copy file/directory to another location     |
 
 ## Configuration
 
@@ -271,14 +271,14 @@ export EDITOR=nvim
 
 ### Available Themes
 
-| Theme | Description |
-|-------|-------------|
+| Theme         | Description                            |
+| ------------- | -------------------------------------- |
 | `tokyo-night` | Default dark theme with purple accents |
-| `dracula` | Classic Dracula dark theme |
-| `nord` | Cool, bluish Arctic-inspired theme |
-| `gruvbox` | Retro groove colors |
-| `catppuccin` | Soothing pastel theme |
-| `monokai` | Classic code editor theme |
+| `dracula`     | Classic Dracula dark theme             |
+| `nord`        | Cool, bluish Arctic-inspired theme     |
+| `gruvbox`     | Retro groove colors                    |
+| `catppuccin`  | Soothing pastel theme                  |
+| `monokai`     | Classic code editor theme              |
 
 Example usage:
 
@@ -294,24 +294,24 @@ export TERM_EXPLORER_THEME="nord"
 
 Term-explorer automatically assigns icons based on file type:
 
-| Icon | Type |
-|------|------|
-| 📁 | Directory |
-| 🔗 | Symbolic link |
-| 🐚 | Shell script |
-| 🐍 | Python |
-| 📜 | JavaScript |
-| 💠 | TypeScript |
-| 📋 | JSON |
-| ⚙️  | YAML/TOML |
-| 📝 | Markdown |
-| 🐳 | Docker |
-| 📦 | Archive |
-| 🖼️  | Image |
-| 🎵 | Audio |
-| 🎬 | Video |
-| 🔐 | Environment file |
-| ⚡ | Executable |
+| Icon | Type             |
+| ---- | ---------------- |
+| 📁   | Directory        |
+| 🔗   | Symbolic link    |
+| 🐚   | Shell script     |
+| 🐍   | Python           |
+| 📜   | JavaScript       |
+| 💠   | TypeScript       |
+| 📋   | JSON             |
+| ⚙️   | YAML/TOML        |
+| 📝   | Markdown         |
+| 🐳   | Docker           |
+| 📦   | Archive          |
+| 🖼️   | Image            |
+| 🎵   | Audio            |
+| 🎬   | Video            |
+| 🔐   | Environment file |
+| ⚡   | Executable       |
 
 ## Troubleshooting
 
@@ -360,6 +360,7 @@ sudo apt install wl-clipboard
 ### Icons not displaying correctly
 
 Make sure your terminal supports Unicode/emoji. For best results, use a modern terminal emulator like:
+
 - iTerm2 (macOS)
 - Alacritty
 - Kitty
@@ -397,6 +398,7 @@ rm -rf ~/.config/term-explorer
 ```
 
 The uninstall script will:
+
 - Remove the `te` symlink
 - Preserve bookmarks (ask before deleting)
 - Remove term-explorer references from `.zshrc`
