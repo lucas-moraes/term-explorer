@@ -26,7 +26,7 @@ jobs:
       - name: Run ShellCheck
         run: |
           shellcheck --version
-          shellcheck --shell=zsh term-explorer.zsh
+          shellcheck --shell=bash term-explorer.zsh
           shellcheck --shell=bash install.sh uninstall.sh update.sh
 
   # ============================================================================
@@ -101,7 +101,7 @@ jobs:
 
       - name: Install via Makefile
         run: |
-          sudo make install-user
+          make install-user
 
       - name: Verify installation
         run: |
@@ -116,7 +116,7 @@ jobs:
 
       - name: Uninstall
         run: |
-          sudo make uninstall
+          make uninstall
 
       - name: Verify uninstallation
         run: |

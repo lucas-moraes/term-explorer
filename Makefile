@@ -61,7 +61,8 @@ install:
 	@install -d $(CONFIG_DIR)
 	@install -m 644 $(SCRIPT) $(CONFIG_DIR)/$(SCRIPT) || true
 	@echo '#!/usr/bin/env zsh' > $(BINDIR)/te
-	@echo 'source $(CONFIG_DIR)/$(SCRIPT) "$$@"' >> $(BINDIR)/te
+	@echo 'source "$(CONFIG_DIR)/$(SCRIPT)"' >> $(BINDIR)/te
+	@echo 'term-explorer "$$@"' >> $(BINDIR)/te
 	@chmod +x $(BINDIR)/te
 	@echo "$(GREEN)✓ Installed to $(BINDIR)/te$(NC)"
 	@echo "$(YELLOW)Add to PATH: export PATH=\"$(BINDIR):$$PATH\"$(NC)"

@@ -6,13 +6,13 @@ pkgver=2.1.0
 pkgrel=1
 pkgdesc="Interactive file explorer for Zsh with fuzzy search"
 arch=('any')
-url="https://github.com/YOUR_USERNAME/term-explorer"
+url="https://github.com/lucas-moraes/term-explorer"
 license=('MIT')
 depends=('zsh' 'fzf')
 optdepends=('bat: Syntax highlighting for file preview'
             'fd: Faster recursive search')
 source=("${pkgname}-${pkgver}.tar.gz::${url}/archive/refs/tags/v${pkgver}.tar.gz")
-sha256sums=('SKIP')
+sha256sums=('SKIP')  # TODO: Replace with actual SHA-256 checksum before publishing
 
 package() {
   cd "${srcdir}/${pkgname}-${pkgver}"
@@ -23,7 +23,8 @@ package() {
   # Install wrapper script
   install -Dm755 <(cat <<'EOF'
 #!/usr/bin/env zsh
-source /usr/share/term-explorer/term-explorer.zsh "$@"
+source /usr/share/term-explorer/term-explorer.zsh
+term-explorer "$@"
 EOF
   ) "$pkgdir/usr/bin/te"
 

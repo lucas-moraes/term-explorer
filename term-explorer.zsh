@@ -177,7 +177,7 @@ _te_preview() {
         echo "🔗 Symbolic link: $item"
         echo "   → $target"
         echo ""
-        if [[ -e "$item" ]]; then
+        if [[ -e "$target" ]]; then
             _te_preview "_ $target"
         else
             echo "⚠️  Broken link"
@@ -265,7 +265,7 @@ _te_search_recursive() {
             --border=rounded \
             --prompt="🔍 Search: " \
             --header="Recursive file search (Esc to cancel)" \
-            --preview="$(_te_get_bat && echo '$(_te_get_bat) --color=always --style=numbers --line-range=:50 -- {}' || echo 'head -50 -- {}')" \
+            --preview="$(command -v bat &>/dev/null && echo 'bat --color=always --style=numbers --line-range=:50 -- {}' || command -v batcat &>/dev/null && echo 'batcat --color=always --style=numbers --line-range=:50 -- {}' || echo 'head -50 -- {}')" \
             --preview-window=right:50%:wrap \
             $TERM_EXPLORER_FZF_COLORS \
             --ansi)
@@ -369,8 +369,7 @@ _te_bookmarks_open() {
             --border=rounded \
             --prompt="🔖 Bookmark: " \
             --header="Select a bookmark (Tab to see actions)" \
-            --bind="ctrl-d:execute-silent(echo {..} | sed 's/^.* //' | xargs -r _te_bookmarks_remove && reload)+reload(_te_bookmarks_load | nl -w2 -s '. ' | sed 's/^/🔖 /')+change-header(ctrl-d: Removed bookmark)" \
-            --bind="ctrl-d:execute-silent(echo {..} | sed 's/^.* //' | xargs -r _te_bookmarks_remove && reload)+reload(_te_bookmarks_load | nl -w2 -s '. ' | sed 's/^/🔖 /')+change-header(ctrl-d: Removed bookmark)" \
+            --bind="ctrl-d:execute-silent(echo {..} | sed 's/^.* //' | xargs -r -I {} sh -c 'BOOKMARK_FILE=\"${TERM_EXPLORER_BOOKMARK_FILE:-$HOME/.term-explorer-bookmarks}\"; TMP_FILE=\"${BOOKMARK_FILE}.tmp\"; if [ -f \"$BOOKMARK_FILE\" ]; then grep -vFx \"{}\" \"$BOOKMARK_FILE\" > \"$TMP_FILE\" && mv \"$TMP_FILE\" \"$BOOKMARK_FILE\"; fi')+reload(_te_bookmarks_load | nl -w2 -s '. ' | sed 's/^/🔖 /')+change-header(ctrl-d: Removed bookmark)" \
             $TERM_EXPLORER_FZF_COLORS \
             --ansi)
     

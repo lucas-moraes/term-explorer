@@ -94,7 +94,13 @@ show_changes() {
 
     if [[ -f CHANGELOG.md ]]; then
         # Show latest changelog entry
-        awk '/^## \[/ {p=1} p && /^## \[/{if(!first)exit;first=1}' CHANGELOG.md | head -50
+        awk '
+            /^## \[/ {
+                if (found) exit;
+                found = 1;
+            }
+            found
+        ' CHANGELOG.md | head -50
     fi
 
     print -P "%F{cyan}─────────────────────────────────────────%f\n"
