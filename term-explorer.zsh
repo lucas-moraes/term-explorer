@@ -205,10 +205,6 @@ _te_preview() {
     echo "❓ Unknown item: $item"
 }
 
-# Export preview function for fzf subprocess
-export -f _te_preview 2>/dev/null || true
-export -f _te_get_bat 2>/dev/null || true
-
 # ----------------------------------------------------------------------------
 # _te_history_push: Add directory to navigation history
 # Arguments: $1 = directory path
@@ -926,7 +922,7 @@ term-explorer() {
     
     # Parse arguments
     local start_dir="${1:-.}"
-    local show_preview=${TERM_EXPLORER_PREVIEW:-0}
+    local show_preview=${TERM_EXPLORER_PREVIEW:-1}
     local show_hidden=${TERM_EXPLORER_SHOW_HIDDEN:-1}
     
     # Validate directory
@@ -964,9 +960,10 @@ term-explorer() {
         local history_count="[←:${#_TE_HISTORY[@]}]"
         
         # Build header with keyboard shortcuts
-        local header="╭──────────────────────────────────────────────────────────────────────────────────╮
-│ Enter: Select │ Esc: Exit │ ^R: Refresh │ ^H: Parent │ ^B: Bookmarks  │
-│ M-.: Hidden   │ ^P: Preview│ ^O: Back   │ ^F: Search │ ^Q: Quick Act   │
+        local header="
+╭──────────────────────────────────────────────────────────────────────────────────╮
+│ Enter: Select │ Esc: Exit  │ ^R: Refresh │ ^H: Parent │ ^B: Bookmarks            │
+│ M-.: Hidden   │ ^P: Preview│ ^O: Back    │ ^F: Search │ ^Q: Quick Act            │
 ╰──────────────────────────────────────────────────────────────────────────────────╯
  📂 $PWD
  📊 $item_count items  $hidden_status $preview_status $history_count"

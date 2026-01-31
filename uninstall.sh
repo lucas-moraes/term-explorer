@@ -129,7 +129,7 @@ remove_oh_my_zsh_plugin() {
 # Main uninstall function
 main() {
     print -P "%F{cyan}╭──────────────────────────────────────────────────────────────────╮%f"
-    print -P "%F{cyan}│%F{bold}              TERM-EXPLORER UNINSTALLER%f %F{cyan}                │%f"
+    print -P "%F{cyan}│%F{bold}              TERM-EXPLORER UNINSTALLER%f %F{cyan}                          │%f"
     print -P "%F{cyan}╰──────────────────────────────────────────────────────────────────╯%f"
     echo ""
 
