@@ -18,15 +18,83 @@
 # ----------------------------------------------------------------------------
 # Global Configuration
 # ----------------------------------------------------------------------------
-typeset -g TERM_EXPLORER_VERSION="1.0.0"
+typeset -g TERM_EXPLORER_VERSION="2.1.0"
 typeset -g TERM_EXPLORER_SHOW_HIDDEN=${TERM_EXPLORER_SHOW_HIDDEN:-1}
+typeset -g TERM_EXPLORER_PREVIEW=${TERM_EXPLORER_PREVIEW:-1}
+typeset -g TERM_EXPLORER_THEME=${TERM_EXPLORER_THEME:-"tokyo-night"}
 
-# Tokyo Night theme for fzf
-typeset -g TERM_EXPLORER_FZF_COLORS="--color=fg:#c0caf5,bg:#1a1b26,hl:#bb9af7"
-TERM_EXPLORER_FZF_COLORS+=",fg+:#c0caf5,bg+:#292e42,hl+:#7dcfff"
-TERM_EXPLORER_FZF_COLORS+=",info:#7aa2f7,prompt:#7dcfff,pointer:#ff007c"
-TERM_EXPLORER_FZF_COLORS+=",marker:#9ece6a,spinner:#9ece6a,header:#9ece6a"
-TERM_EXPLORER_FZF_COLORS+=",border:#565f89"
+# Navigation history stack
+typeset -ga _TE_HISTORY=()
+typeset -g _TE_HISTORY_MAX=50
+
+# ----------------------------------------------------------------------------
+# _te_get_theme_colors: Returns fzf color scheme for specified theme
+# Arguments: $1 = theme name (optional, uses TERM_EXPLORER_THEME if not set)
+# Available themes: tokyo-night, dracula, nord, gruvbox, catppuccin, monokai
+# ----------------------------------------------------------------------------
+_te_get_theme_colors() {
+    local theme="${1:-$TERM_EXPLORER_THEME}"
+    local colors=""
+    
+    case "$theme" in
+        tokyo-night|tokyo)
+            colors="--color=fg:#c0caf5,bg:#1a1b26,hl:#bb9af7"
+            colors+=",fg+:#c0caf5,bg+:#292e42,hl+:#7dcfff"
+            colors+=",info:#7aa2f7,prompt:#7dcfff,pointer:#ff007c"
+            colors+=",marker:#9ece6a,spinner:#9ece6a,header:#9ece6a"
+            colors+=",border:#565f89"
+            ;;
+        dracula)
+            colors="--color=fg:#f8f8f2,bg:#282a36,hl:#bd93f9"
+            colors+=",fg+:#f8f8f2,bg+:#44475a,hl+:#ff79c6"
+            colors+=",info:#8be9fd,prompt:#50fa7b,pointer:#ff79c6"
+            colors+=",marker:#50fa7b,spinner:#50fa7b,header:#6272a4"
+            colors+=",border:#6272a4"
+            ;;
+        nord)
+            colors="--color=fg:#d8dee9,bg:#2e3440,hl:#88c0d0"
+            colors+=",fg+:#eceff4,bg+:#3b4252,hl+:#8fbcbb"
+            colors+=",info:#81a1c1,prompt:#88c0d0,pointer:#bf616a"
+            colors+=",marker:#a3be8c,spinner:#b48ead,header:#81a1c1"
+            colors+=",border:#4c566a"
+            ;;
+        gruvbox)
+            colors="--color=fg:#ebdbb2,bg:#282828,hl:#fabd2f"
+            colors+=",fg+:#ebdbb2,bg+:#3c3836,hl+:#fe8019"
+            colors+=",info:#83a598,prompt:#b8bb26,pointer:#fb4934"
+            colors+=",marker:#b8bb26,spinner:#fabd2f,header:#83a598"
+            colors+=",border:#504945"
+            ;;
+        catppuccin|catppuccin-mocha)
+            colors="--color=fg:#cdd6f4,bg:#1e1e2e,hl:#f5c2e7"
+            colors+=",fg+:#cdd6f4,bg+:#313244,hl+:#f5c2e7"
+            colors+=",info:#89b4fa,prompt:#94e2d5,pointer:#f38ba8"
+            colors+=",marker:#a6e3a1,spinner:#f9e2af,header:#89b4fa"
+            colors+=",border:#6c7086"
+            ;;
+        monokai)
+            colors="--color=fg:#f8f8f2,bg:#272822,hl:#f92672"
+            colors+=",fg+:#f8f8f2,bg+:#3e3d32,hl+:#ae81ff"
+            colors+=",info:#66d9ef,prompt:#a6e22e,pointer:#f92672"
+            colors+=",marker:#a6e22e,spinner:#fd971f,header:#75715e"
+            colors+=",border:#75715e"
+            ;;
+        *)
+            # Default to tokyo-night if theme not found
+            colors="--color=fg:#c0caf5,bg:#1a1b26,hl:#bb9af7"
+            colors+=",fg+:#c0caf5,bg+:#292e42,hl+:#7dcfff"
+            colors+=",info:#7aa2f7,prompt:#7dcfff,pointer:#ff007c"
+            colors+=",marker:#9ece6a,spinner:#9ece6a,header:#9ece6a"
+            colors+=",border:#565f89"
+            ;;
+    esac
+    
+    echo "$colors"
+}
+
+# Initialize theme colors
+typeset -g TERM_EXPLORER_FZF_COLORS
+TERM_EXPLORER_FZF_COLORS=$(_te_get_theme_colors)
 
 # ----------------------------------------------------------------------------
 # _te_check_deps: Check if required dependencies are installed
@@ -34,7 +102,6 @@ TERM_EXPLORER_FZF_COLORS+=",border:#565f89"
 # ----------------------------------------------------------------------------
 _te_check_deps() {
     local missing=()
-    local warnings=()
     
     # Required dependency
     if ! command -v fzf &>/dev/null; then
@@ -55,22 +122,6 @@ _te_check_deps() {
         return 1
     fi
     
-    # Optional dependencies warnings (non-blocking)
-    if ! command -v bat &>/dev/null && ! command -v batcat &>/dev/null; then
-        warnings+=("bat (using 'cat' for preview)")
-    fi
-    
-    if ! command -v eza &>/dev/null; then
-        warnings+=("eza (using 'ls' for listing)")
-    fi
-    
-    # Show warnings for optional dependencies
-    if (( ${#warnings[@]} > 0 )); then
-        for warn in "${warnings[@]}"; do
-            print -P "%F{yellow}[term-explorer]%f Warning: '$warn' not found"
-        done
-    fi
-    
     return 0
 }
 
@@ -89,116 +140,244 @@ _te_get_bat() {
 }
 
 # ----------------------------------------------------------------------------
-# _te_get_file_size: Get human-readable file size (cross-platform)
-# Arguments: $1 = file path
-# ----------------------------------------------------------------------------
-_te_get_file_size() {
-    local file="$1"
-    local size
-    
-    # Try GNU stat first, then BSD stat
-    if stat --version &>/dev/null 2>&1; then
-        # GNU stat (Linux)
-        size=$(stat -c%s "$file" 2>/dev/null)
-    else
-        # BSD stat (macOS)
-        size=$(stat -f%z "$file" 2>/dev/null)
-    fi
-    
-    # Convert to human-readable
-    if command -v numfmt &>/dev/null; then
-        echo $(numfmt --to=iec $size 2>/dev/null)
-    elif command -v gnumfmt &>/dev/null; then
-        echo $(gnumfmt --to=iec $size 2>/dev/null)
-    else
-        # Fallback: manual conversion
-        if (( size >= 1073741824 )); then
-            printf "%.1fG" $((size / 1073741824.0))
-        elif (( size >= 1048576 )); then
-            printf "%.1fM" $((size / 1048576.0))
-        elif (( size >= 1024 )); then
-            printf "%.1fK" $((size / 1024.0))
-        else
-            echo "${size}B"
-        fi
-    fi
-}
-
-# ----------------------------------------------------------------------------
-# _te_preview: Generate preview for file or directory
-# Arguments: $1 = target path
+# _te_preview: Generate preview for file/directory
+# Arguments: $1 = item (with icon prefix)
 # ----------------------------------------------------------------------------
 _te_preview() {
-    local target="$1"
+    local selection="$1"
+    local item="${selection#* }"  # Remove icon prefix
     
-    # Remove icon prefix if present (handles "📁 dirname" format)
-    if [[ "$target" == *" "* ]]; then
-        target="${target#* }"
-    fi
-    
-    # Handle empty selection
-    if [[ -z "$target" ]]; then
-        echo "No item selected"
-        return
-    fi
-    
-    # Directory preview
-    if [[ -d "$target" ]]; then
-        print -P "%F{blue}%B📁 Directory:%b%f $target"
-        echo "────────────────────────────────────────"
-        
+    # Parent directory
+    if [[ "$item" == ".." ]]; then
+        echo "📁 Parent directory"
+        echo ""
         if command -v eza &>/dev/null; then
-            eza --color=always --icons=always -la --group-directories-first "$target" 2>/dev/null
+            eza -la --color=always --icons -- ".." 2>/dev/null | head -20
         else
-            ls -la --color=always "$target" 2>/dev/null || ls -laG "$target" 2>/dev/null || ls -la "$target"
+            ls -la -- ".." 2>/dev/null | head -20
         fi
         return
     fi
     
-    # File preview
-    if [[ -f "$target" ]]; then
-        local bat_cmd=$(_te_get_bat)
-        local file_size=$(_te_get_file_size "$target")
-        local file_type=$(file -b "$target" 2>/dev/null | head -c 50)
-        
-        print -P "%F{green}%B📄 File:%b%f $target"
-        print -P "%F{cyan}📊 Size:%f $file_size"
-        print -P "%F{magenta}📋 Type:%f $file_type"
-        echo "────────────────────────────────────────"
-        
-        # Check if binary file
-        if file "$target" 2>/dev/null | grep -qE "binary|executable|data|archive|image|audio|video"; then
-            print -P "%F{yellow}[Binary file - preview not available]%f"
-            file "$target" 2>/dev/null
-            return
-        fi
-        
-        # Text file preview
-        if [[ -n "$bat_cmd" ]]; then
-            $bat_cmd --color=always --style=numbers,header --line-range=:300 "$target" 2>/dev/null
+    # Directory
+    if [[ -d "$item" ]]; then
+        echo "📁 Directory: $item"
+        echo ""
+        if command -v eza &>/dev/null; then
+            eza -la --color=always --icons -- "$item" 2>/dev/null | head -30
         else
-            head -n 100 "$target" 2>/dev/null
+            ls -la -- "$item" 2>/dev/null | head -30
         fi
         return
     fi
     
     # Symbolic link
-    if [[ -L "$target" ]]; then
-        local link_target=$(readlink "$target" 2>/dev/null)
-        print -P "%F{cyan}%B🔗 Symbolic link:%b%f $target"
-        print -P "%F{cyan}   → Points to:%f $link_target"
-        echo "────────────────────────────────────────"
-        
-        if [[ -e "$link_target" ]]; then
-            _te_preview "$link_target"
+    if [[ -L "$item" ]]; then
+        local target=$(readlink -- "$item" 2>/dev/null)
+        echo "🔗 Symbolic link: $item"
+        echo "   → $target"
+        echo ""
+        if [[ -e "$item" ]]; then
+            _te_preview "_ $target"
         else
-            print -P "%F{red}[Broken link - target does not exist]%f"
+            echo "⚠️  Broken link"
         fi
         return
     fi
     
-    # Unknown type
-    print -P "%F{red}❓ Item not found:%f $target"
+    # Regular file
+    if [[ -f "$item" ]]; then
+        local size=$(du -h -- "$item" 2>/dev/null | cut -f1)
+        local lines=$(wc -l < "$item" 2>/dev/null | tr -d ' ')
+        echo "📄 File: $item"
+        echo "   Size: $size | Lines: $lines"
+        echo ""
+        
+        local bat_cmd=$(_te_get_bat)
+        if [[ -n "$bat_cmd" ]]; then
+            "$bat_cmd" --color=always --style=numbers --line-range=:50 -- "$item" 2>/dev/null
+        else
+            head -50 -- "$item" 2>/dev/null
+        fi
+        return
+    fi
+    
+    echo "❓ Unknown item: $item"
+}
+
+# ----------------------------------------------------------------------------
+# _te_history_push: Add directory to navigation history
+# Arguments: $1 = directory path
+# ----------------------------------------------------------------------------
+_te_history_push() {
+    local dir="$1"
+    
+    # Don't add duplicates of the last entry
+    if [[ ${#_TE_HISTORY[@]} -gt 0 && "${_TE_HISTORY[-1]}" == "$dir" ]]; then
+        return
+    fi
+    
+    _TE_HISTORY+=("$dir")
+    
+    # Limit history size
+    if [[ ${#_TE_HISTORY[@]} -gt $_TE_HISTORY_MAX ]]; then
+        _TE_HISTORY=("${_TE_HISTORY[@]:1}")
+    fi
+}
+
+# ----------------------------------------------------------------------------
+# _te_history_pop: Get and remove last directory from history
+# Returns: Previous directory path or empty
+# ----------------------------------------------------------------------------
+_te_history_pop() {
+    if [[ ${#_TE_HISTORY[@]} -eq 0 ]]; then
+        echo ""
+        return
+    fi
+    
+    local prev="${_TE_HISTORY[-1]}"
+    _TE_HISTORY=("${_TE_HISTORY[@]:0:-1}")
+    echo "$prev"
+}
+
+# ----------------------------------------------------------------------------
+# _te_search_recursive: Recursive file search using fd or find
+# Arguments: $1 = search directory
+# Returns: Selected file path or empty
+# ----------------------------------------------------------------------------
+_te_search_recursive() {
+    local search_dir="${1:-.}"
+    local search_cmd=""
+    local result=""
+    
+    # Prefer fd over find for speed
+    if command -v fd &>/dev/null; then
+        search_cmd="fd --type f --hidden --follow --exclude .git . '$search_dir'"
+    elif command -v fdfind &>/dev/null; then
+        search_cmd="fdfind --type f --hidden --follow --exclude .git . '$search_dir'"
+    else
+        search_cmd="find '$search_dir' -type f -not -path '*/.git/*' 2>/dev/null"
+    fi
+    
+    result=$(eval "$search_cmd" 2>/dev/null | \
+        fzf --height=80% \
+            --layout=reverse \
+            --border=rounded \
+            --prompt="🔍 Search: " \
+            --header="Recursive file search (Esc to cancel)" \
+            --preview="$(_te_get_bat && echo '$(_te_get_bat) --color=always --style=numbers --line-range=:50 -- {}' || echo 'head -50 -- {}')" \
+            --preview-window=right:50%:wrap \
+            $TERM_EXPLORER_FZF_COLORS \
+            --ansi)
+    
+    echo "$result"
+}
+
+# ----------------------------------------------------------------------------
+# _te_bookmarks_file: Get bookmarks file path
+# ----------------------------------------------------------------------------
+_te_bookmarks_file() {
+    echo "${XDG_CONFIG_HOME:-$HOME/.config}/term-explorer/bookmarks"
+}
+
+# ----------------------------------------------------------------------------
+# _te_bookmarks_load: Load all bookmarks
+# Returns: List of bookmarked directories
+# ----------------------------------------------------------------------------
+_te_bookmarks_load() {
+    local bm_file=$(_te_bookmarks_file)
+    [[ -f "$bm_file" ]] && cat "$bm_file" 2>/dev/null || echo ""
+}
+
+# ----------------------------------------------------------------------------
+# _te_bookmarks_save: Save bookmarks
+# Arguments: $@ = directories to save
+# ----------------------------------------------------------------------------
+_te_bookmarks_save() {
+    local bm_file=$(_te_bookmarks_file)
+    mkdir -p "$(dirname "$bm_file")"
+    printf '%s\n' "$@" > "$bm_file" 2>/dev/null
+}
+
+# ----------------------------------------------------------------------------
+# _te_bookmarks_add: Add current directory to bookmarks
+# Returns: 0 on success, 1 on failure
+# ----------------------------------------------------------------------------
+_te_bookmarks_add() {
+    local current_dir="$PWD"
+    local bookmarks=$(_te_bookmarks_load)
+    
+    # Check if already bookmarked
+    if echo "$bookmarks" | grep -qxF "$current_dir"; then
+        print -P "%F{yellow}⚠️  Already bookmarked:%f $current_dir"
+        sleep 1
+        return 1
+    fi
+    
+    # Add bookmark
+    if [[ -n "$bookmarks" ]]; then
+        _te_bookmarks_save "$bookmarks" "$current_dir"
+    else
+        _te_bookmarks_save "$current_dir"
+    fi
+    
+    print -P "%F{green}✅ Bookmarked:%f $current_dir"
+    sleep 0.5
+    return 0
+}
+
+# ----------------------------------------------------------------------------
+# _te_bookmarks_remove: Remove a directory from bookmarks
+# Arguments: $1 = directory to remove
+# Returns: 0 on success, 1 on failure
+# ----------------------------------------------------------------------------
+_te_bookmarks_remove() {
+    local target="$1"
+    local bookmarks=$(_te_bookmarks_load)
+    
+    # Filter out the target directory
+    local new_bookmarks=$(echo "$bookmarks" | grep -vxF "$target")
+    
+    if [[ "$new_bookmarks" == "$bookmarks" ]]; then
+        return 1
+    fi
+    
+    _te_bookmarks_save ${(f)new_bookmarks}
+    return 0
+}
+
+# ----------------------------------------------------------------------------
+# _te_bookmarks_open: Open bookmarks selection menu
+# Returns: Selected directory path or empty
+# ----------------------------------------------------------------------------
+_te_bookmarks_open() {
+    local bookmarks=$(_te_bookmarks_load)
+    
+    if [[ -z "$bookmarks" ]]; then
+        print -P "%F{yellow}📭 No bookmarks yet%f"
+        print -P "%F{yellow}Press Ctrl-D to bookmark current directory%f"
+        sleep 1.5
+        return
+    fi
+    
+    # Format bookmarks for display
+    local formatted=$(echo "$bookmarks" | nl -w2 -s '. ' | sed 's/^/🔖 /')
+    
+    local selected=$(echo "$formatted" | \
+        fzf --height=50% \
+            --layout=reverse \
+            --border=rounded \
+            --prompt="🔖 Bookmark: " \
+            --header="Select a bookmark (Tab to see actions)" \
+            --bind="ctrl-d:execute-silent(echo {..} | sed 's/^.* //' | xargs -r _te_bookmarks_remove && reload)+reload(_te_bookmarks_load | nl -w2 -s '. ' | sed 's/^/🔖 /')+change-header(ctrl-d: Removed bookmark)" \
+            --bind="ctrl-d:execute-silent(echo {..} | sed 's/^.* //' | xargs -r _te_bookmarks_remove && reload)+reload(_te_bookmarks_load | nl -w2 -s '. ' | sed 's/^/🔖 /')+change-header(ctrl-d: Removed bookmark)" \
+            $TERM_EXPLORER_FZF_COLORS \
+            --ansi)
+    
+    if [[ -n "$selected" ]]; then
+        # Extract directory path (remove number prefix and bookmark icon)
+        echo "$selected" | sed 's/^🔖 [0-9]*\. //'
+    fi
 }
 
 # ----------------------------------------------------------------------------
@@ -432,6 +611,7 @@ _te_actions() {
     
     local action=$(printf '%s\n' "${actions[@]}" | \
         fzf --height=50% \
+            --layout=reverse \
             --border=rounded \
             --prompt="Action: " \
             --header="📄 $file" \
@@ -443,7 +623,7 @@ _te_actions() {
         *"Edit"*)
             local editor="${EDITOR:-${VISUAL:-vim}}"
             print -P "%F{green}Opening in editor:%f $editor"
-            $editor "$file"
+            "$editor" -- "$file"
             return 0
             ;;
             
@@ -468,9 +648,9 @@ _te_actions() {
         *"View"*)
             local bat_cmd=$(_te_get_bat)
             if [[ -n "$bat_cmd" ]]; then
-                $bat_cmd --color=always --style=numbers,header --paging=always "$file"
+                "$bat_cmd" --color=always --style=numbers,header --paging=always -- "$file"
             else
-                less "$file"
+                less -- "$file"
             fi
             return 0
             ;;
@@ -488,7 +668,7 @@ _te_actions() {
             read -r confirmation
             
             if [[ "$confirmation" == "yes" ]]; then
-                if rm "$file" 2>/dev/null; then
+                if rm -- "$file" 2>/dev/null; then
                     print -P "%F{green}✅ File deleted successfully%f"
                 else
                     print -P "%F{red}❌ Error deleting file%f"
@@ -509,6 +689,230 @@ _te_actions() {
 }
 
 # ----------------------------------------------------------------------------
+# _te_quick_actions: Quick actions menu (create, rename, move, copy)
+# ----------------------------------------------------------------------------
+_te_quick_actions() {
+    local current_dir="$PWD"
+    
+    local actions=(
+        "📄 Create new file"
+        "📁 Create new directory"
+        "🔄 Rename item"
+        "➡️  Move item"
+        "📋 Copy item"
+        "❌ Cancel"
+    )
+    
+    local action=$(printf '%s\n' "${actions[@]}" | \
+        fzf --height=40% \
+            --layout=reverse \
+            --border=rounded \
+            --prompt="Action: " \
+            --header="Quick Actions" \
+            $TERM_EXPLORER_FZF_COLORS \
+            --no-preview \
+            --no-sort)
+    
+    case "$action" in
+        *"Create new file"*)
+            echo ""
+            print -Pn "%F{cyan}Enter filename:%f "
+            local filename
+            read -r filename
+            if [[ -n "$filename" ]]; then
+                if touch -- "$filename" 2>/dev/null; then
+                    print -P "%F{green}✅ Created:%f $filename"
+                else
+                    print -P "%F{red}❌ Error creating file%f"
+                fi
+            fi
+            sleep 0.5
+            ;;
+            
+        *"Create new directory"*)
+            echo ""
+            print -Pn "%F{cyan}Enter directory name:%f "
+            local dirname
+            read -r dirname
+            if [[ -n "$dirname" ]]; then
+                if mkdir -- "$dirname" 2>/dev/null; then
+                    print -P "%F{green}✅ Created directory:%f $dirname"
+                else
+                    print -P "%F{red}❌ Error creating directory%f"
+                fi
+            fi
+            sleep 0.5
+            ;;
+            
+        *"Rename"*)
+            echo ""
+            print -Pn "%F{cyan}Enter item to rename:%f "
+            local oldname
+            read -r oldname
+            if [[ -n "$oldname" && -e "$oldname" ]]; then
+                print -Pn "%F{cyan}Enter new name:%f "
+                local newname
+                read -r newname
+                if [[ -n "$newname" ]]; then
+                    if mv -- "$oldname" "$newname" 2>/dev/null; then
+                        print -P "%F{green}✅ Renamed%f"
+                    else
+                        print -P "%F{red}❌ Error renaming%f"
+                    fi
+                fi
+            else
+                print -P "%F{red}❌ Item not found:%f $oldname"
+            fi
+            sleep 0.5
+            ;;
+            
+        *"Move"*)
+            echo ""
+            print -Pn "%F{cyan}Enter item to move:%f "
+            local item
+            read -r item
+            if [[ -n "$item" && -e "$item" ]]; then
+                print -Pn "%F{cyan}Enter destination path:%f "
+                local dest
+                read -r dest
+                if [[ -n "$dest" ]]; then
+                    if mv -- "$item" "$dest" 2>/dev/null; then
+                        print -P "%F{green}✅ Moved%f"
+                    else
+                        print -P "%F{red}❌ Error moving%f"
+                    fi
+                fi
+            else
+                print -P "%F{red}❌ Item not found:%f $item"
+            fi
+            sleep 0.5
+            ;;
+            
+        *"Copy"*)
+            echo ""
+            print -Pn "%F{cyan}Enter item to copy:%f "
+            local item
+            read -r item
+            if [[ -n "$item" && -e "$item" ]]; then
+                print -Pn "%F{cyan}Enter destination path:%f "
+                local dest
+                read -r dest
+                if [[ -n "$dest" ]]; then
+                    if [[ -d "$item" ]]; then
+                        if cp -r -- "$item" "$dest" 2>/dev/null; then
+                            print -P "%F{green}✅ Copied directory%f"
+                        else
+                            print -P "%F{red}❌ Error copying%f"
+                        fi
+                    else
+                        if cp -- "$item" "$dest" 2>/dev/null; then
+                            print -P "%F{green}✅ Copied%f"
+                        else
+                            print -P "%F{red}❌ Error copying%f"
+                        fi
+                    fi
+                fi
+            else
+                print -P "%F{red}❌ Item not found:%f $item"
+            fi
+            sleep 0.5
+            ;;
+            
+        *"Cancel"*|"")
+            return
+            ;;
+    esac
+}
+
+# ----------------------------------------------------------------------------
+# _te_dir_actions: Action menu for selected directory
+# Arguments: $1 = directory name
+# ----------------------------------------------------------------------------
+_te_dir_actions() {
+    local dir="$1"
+    local abs_path="$PWD/$dir"
+    
+    local actions=(
+        "📝 Rename directory"
+        "📋 Copy absolute path"
+        "📋 Copy relative path"
+        "🗑️  Delete directory"
+        "❌ Cancel"
+    )
+    
+    local action=$(printf '%s\n' "${actions[@]}" | \
+        fzf --height=40% \
+            --layout=reverse \
+            --border=rounded \
+            --prompt="Action: " \
+            --header="📁 $dir" \
+            $TERM_EXPLORER_FZF_COLORS \
+            --no-preview \
+            --no-sort)
+    
+    case "$action" in
+        *"Rename"*)
+            echo ""
+            print -Pn "%F{cyan}Enter new name for%f $dir: "
+            local newname
+            read -r newname
+            if [[ -n "$newname" ]]; then
+                if mv -- "$dir" "$newname" 2>/dev/null; then
+                    print -P "%F{green}✅ Renamed to%f $newname"
+                else
+                    print -P "%F{red}❌ Error renaming%f"
+                fi
+            fi
+            sleep 0.5
+            ;;
+            
+        *"absolute"*)
+            if _te_copy "$abs_path"; then
+                print -P "%F{green}✅ Absolute path copied:%f"
+                print -P "   %F{cyan}$abs_path%f"
+            fi
+            sleep 1
+            ;;
+            
+        *"relative"*)
+            if _te_copy "$dir"; then
+                print -P "%F{green}✅ Relative path copied:%f"
+                print -P "   %F{cyan}$dir%f"
+            fi
+            sleep 1
+            ;;
+            
+        *"Delete"*)
+            echo ""
+            print -P "%F{red}%B⚠️  WARNING: You are about to delete directory:%b%f"
+            print -P "   %F{yellow}$abs_path%f"
+            echo ""
+            print -P "%F{red}This action is irreversible!%f"
+            echo ""
+            print -Pn "%F{yellow}Type 'yes' to confirm: %f"
+            
+            local confirmation
+            read -r confirmation
+            
+            if [[ "$confirmation" == "yes" ]]; then
+                if rm -rf -- "$dir" 2>/dev/null; then
+                    print -P "%F{green}✅ Directory deleted successfully%f"
+                else
+                    print -P "%F{red}❌ Error deleting directory%f"
+                fi
+            else
+                print -P "%F{blue}❌ Deletion cancelled%f"
+            fi
+            sleep 1
+            ;;
+            
+        *"Cancel"*|"")
+            return
+            ;;
+    esac
+}
+
+# ----------------------------------------------------------------------------
 # term-explorer: Main function
 # Arguments: $1 = initial directory (optional, defaults to current)
 # ----------------------------------------------------------------------------
@@ -518,6 +922,8 @@ term-explorer() {
     
     # Parse arguments
     local start_dir="${1:-.}"
+    local show_preview=${TERM_EXPLORER_PREVIEW:-1}
+    local show_hidden=${TERM_EXPLORER_SHOW_HIDDEN:-1}
     
     # Validate directory
     if [[ ! -d "$start_dir" ]]; then
@@ -525,37 +931,76 @@ term-explorer() {
         return 1
     fi
     
+    # Check read permission
+    if [[ ! -r "$start_dir" ]]; then
+        print -P "%F{red}❌ Permission denied:%f $start_dir"
+        return 1
+    fi
+    
     # Change to initial directory
     cd "$start_dir" || return 1
     
+    # Clear navigation history for new session
+    _TE_HISTORY=()
+    
     local selection
     local item
-    local initial_dir="$PWD"
-    
-    # Store current directory for restoration on exit
-    local original_dir="$OLDPWD"
     
     # Main navigation loop
     while true; do
+        # Count items for header
+        local file_list=$(_te_list "$show_hidden")
+        local item_count=$(echo "$file_list" | wc -l | tr -d ' ')
+        # Subtract 1 for parent dir ".." entry (if not at root)
+        [[ "$PWD" != "/" ]] && ((item_count--))
+        
+        # Build status indicators
+        local hidden_status="[H:$([ "$show_hidden" -eq 1 ] && echo 'ON' || echo 'OFF')]"
+        local preview_status="[P:$([ "$show_preview" -eq 1 ] && echo 'ON' || echo 'OFF')]"
+        local history_count="[←:${#_TE_HISTORY[@]}]"
+        
         # Build header with keyboard shortcuts
-        local header="╭─────────────────────────────────────────────────────────────────────────╮
-│  Enter: Select  │  Esc: Exit  │  ^R: Refresh  │  ^H: Parent Directory   │
-╰─────────────────────────────────────────────────────────────────────────╯
- 📂 $PWD"
+        local header="
+╭──────────────────────────────────────────────────────────────────────────────────╮
+│ Enter: Select │ Esc: Exit  │ ^R: Refresh │ ^H: Parent │ ^B: Bookmarks            │
+│ M-.: Hidden   │ ^P: Preview│ ^O: Back    │ ^F: Search │ ^Q: Quick Act            │
+╰──────────────────────────────────────────────────────────────────────────────────╯
+ 📂 $PWD
+ 📊 $item_count items  $hidden_status $preview_status $history_count"
 
-        # Run fzf with preview
-        selection=$(_te_list "$TERM_EXPLORER_SHOW_HIDDEN" | \
-            fzf --height=80% \
-                --layout=reverse \
-                --border=rounded \
-                --prompt="❯ " \
-                --header="$header" \
-                --header-lines=0 \
-                --bind="ctrl-r:reload(_te_list $TERM_EXPLORER_SHOW_HIDDEN)" \
-                --bind="ctrl-h:become(echo '📁 ..')" \
-                --expect=ctrl-h \
-                $TERM_EXPLORER_FZF_COLORS \
-                --ansi)
+        # Build preview command
+        local preview_cmd=""
+        local preview_window=""
+        if [[ "$show_preview" -eq 1 ]]; then
+            local bat_cmd=$(_te_get_bat)
+            if [[ -n "$bat_cmd" ]]; then
+                preview_cmd="item={};item=\${item#* };if [[ -d \"\$item\" ]];then echo '📁 Directory:' \"\$item\";echo;eza -la --color=always -- \"\$item\" 2>/dev/null || ls -la -- \"\$item\" 2>/dev/null | head -30;elif [[ -f \"\$item\" ]];then $bat_cmd --color=always --style=numbers --line-range=:50 -- \"\$item\" 2>/dev/null;else echo '🔗 '\"\$item\";fi"
+            else
+                preview_cmd="item={};item=\${item#* };if [[ -d \"\$item\" ]];then echo '📁 Directory:' \"\$item\";echo;ls -la -- \"\$item\" 2>/dev/null | head -30;elif [[ -f \"\$item\" ]];then head -50 -- \"\$item\" 2>/dev/null;else echo '🔗 '\"\$item\";fi"
+            fi
+            preview_window="right:50%:wrap"
+        fi
+
+        # Run fzf with dynamic options
+        local fzf_opts=(
+            --height=80%
+            --layout=reverse
+            --border=rounded
+            --prompt="❯ "
+            --header="$header"
+            --header-lines=0
+            --bind="ctrl-r:reload(_te_list $show_hidden)"
+            --bind="ctrl-h:become(echo 'ctrl-h'$'\\n''📁 ..')"
+            --expect="ctrl-h,alt-.,ctrl-p,ctrl-o,ctrl-f,ctrl-b,ctrl-q"
+            $TERM_EXPLORER_FZF_COLORS
+            --ansi
+        )
+        
+        if [[ -n "$preview_cmd" ]]; then
+            fzf_opts+=(--preview="$preview_cmd" --preview-window="$preview_window")
+        fi
+        
+        selection=$(echo "$file_list" | fzf "${fzf_opts[@]}")
         
         local fzf_exit=$?
         
@@ -563,9 +1008,86 @@ term-explorer() {
         local expected_key=$(echo "$selection" | head -1)
         selection=$(echo "$selection" | tail -1)
         
+        # Handle Alt-. (toggle hidden files)
+        if [[ "$expected_key" == "alt-." ]]; then
+            if [[ "$show_hidden" -eq 1 ]]; then
+                show_hidden=0
+                print -P "%F{yellow}🙈 Hidden files: OFF%f"
+            else
+                show_hidden=1
+                print -P "%F{green}👁 Hidden files: ON%f"
+            fi
+            sleep 0.3
+            continue
+        fi
+        
+        # Handle Ctrl-P (toggle preview)
+        if [[ "$expected_key" == "ctrl-p" ]]; then
+            if [[ "$show_preview" -eq 1 ]]; then
+                show_preview=0
+                print -P "%F{yellow}📄 Preview: OFF%f"
+            else
+                show_preview=1
+                print -P "%F{green}👁 Preview: ON%f"
+            fi
+            sleep 0.3
+            continue
+        fi
+        
+        # Handle Ctrl-O (go back in history)
+        if [[ "$expected_key" == "ctrl-o" ]]; then
+            local prev_dir=$(_te_history_pop)
+            if [[ -n "$prev_dir" && -d "$prev_dir" ]]; then
+                cd "$prev_dir"
+                print -P "%F{blue}⬅️  Back to:%f $prev_dir"
+                sleep 0.3
+            else
+                print -P "%F{yellow}📭 No more history%f"
+                sleep 0.5
+            fi
+            continue
+        fi
+        
+        # Handle Ctrl-F (recursive search)
+        if [[ "$expected_key" == "ctrl-f" ]]; then
+            local search_result=$(_te_search_recursive ".")
+            if [[ -n "$search_result" ]]; then
+                # Navigate to file's directory and select the file
+                local file_dir=$(dirname "$search_result")
+                local file_name=$(basename "$search_result")
+                if [[ -d "$file_dir" ]]; then
+                    _te_history_push "$PWD"
+                    cd "$file_dir"
+                    if [[ -f "$file_name" ]]; then
+                        _te_actions "$file_name"
+                    fi
+                fi
+            fi
+            continue
+        fi
+        
+        # Handle Ctrl-B (open bookmarks)
+        if [[ "$expected_key" == "ctrl-b" ]]; then
+            local bookmark=$(_te_bookmarks_open)
+            if [[ -n "$bookmark" && -d "$bookmark" ]]; then
+                _te_history_push "$PWD"
+                cd "$bookmark"
+                print -P "%F{green}🔖 Navigated to:%f $bookmark"
+                sleep 0.3
+            fi
+            continue
+        fi
+        
+        # Handle Ctrl-Q (quick actions)
+        if [[ "$expected_key" == "ctrl-q" ]]; then
+            _te_quick_actions
+            continue
+        fi
+        
         # Handle Ctrl-H
         if [[ "$expected_key" == "ctrl-h" || "$selection" == "📁 .." ]]; then
             if [[ "$PWD" != "/" ]]; then
+                _te_history_push "$PWD"
                 cd ..
                 continue
             fi
@@ -585,22 +1107,54 @@ term-explorer() {
         # Handle selection
         if [[ "$item" == ".." ]]; then
             # Go up one level
-            [[ "$PWD" != "/" ]] && cd ..
+            if [[ "$PWD" != "/" ]]; then
+                _te_history_push "$PWD"
+                cd ..
+            fi
             
         elif [[ -d "$item" ]]; then
-            # Enter directory
-            cd "$item"
+            # Show directory action menu
+            _te_dir_actions "$item"
+            # Check read permission before entering (user can choose from action menu)
+            if [[ -r "$item" ]]; then
+                _te_history_push "$PWD"
+                cd -- "$item"
+            fi
             
         elif [[ -f "$item" ]]; then
             # Show action menu for file
             _te_actions "$item"
             
         elif [[ -L "$item" ]]; then
-            # Handle symbolic link
-            local link_target=$(readlink -f "$item" 2>/dev/null || readlink "$item")
-            if [[ -d "$link_target" ]]; then
-                cd "$item"
-            elif [[ -f "$link_target" ]]; then
+            # Handle symbolic link with depth limit to prevent circular loops
+            local link_target
+            local depth=0
+            local max_depth=10
+            local current="$item"
+            
+            # Resolve symlink chain with depth limit
+            while [[ -L "$current" && $depth -lt $max_depth ]]; do
+                link_target=$(readlink "$current" 2>/dev/null)
+                # Handle relative symlinks
+                if [[ "$link_target" != /* ]]; then
+                    link_target="$(dirname "$current")/$link_target"
+                fi
+                current="$link_target"
+                ((depth++))
+            done
+            
+            if [[ $depth -ge $max_depth ]]; then
+                print -P "%F{red}❌ Circular or too deep symlink:%f $item"
+                sleep 1
+            elif [[ -d "$current" ]]; then
+                if [[ -r "$current" ]]; then
+                    _te_history_push "$PWD"
+                    cd -- "$item"
+                else
+                    print -P "%F{red}❌ Permission denied:%f $item"
+                    sleep 1
+                fi
+            elif [[ -f "$current" ]]; then
                 _te_actions "$item"
             else
                 print -P "%F{red}❌ Broken link:%f $item"
@@ -648,6 +1202,13 @@ KEYBOARD SHORTCUTS:
     Esc         Exit explorer
     Ctrl-R      Refresh file list
     Ctrl-H      Go to parent directory
+    Alt-.       Toggle hidden files visibility
+    Ctrl-P      Toggle preview panel
+    Ctrl-O      Go back to previous directory
+    Ctrl-F      Recursive file search
+    Ctrl-B      Open bookmarks menu
+    Ctrl-D      Add current directory to bookmarks (in bookmarks menu)
+    Ctrl-Q      Quick actions (create, rename, move, copy)
     ↑/↓         Navigate list
     Type        Fuzzy search filter
 
@@ -657,18 +1218,43 @@ FILE ACTIONS:
     👁  View         View file content with pager
     🗑️  Delete       Delete file (with confirmation)
 
+DIRECTORY ACTIONS:
+    📝 Rename       Rename directory
+    📋 Copy path    Copy absolute or relative path to clipboard
+    🗑️  Delete       Delete directory (with confirmation)
+
+QUICK ACTIONS (Ctrl-Q):
+    📄 Create file        Create new file
+    📁 Create directory  Create new directory
+    🔄 Rename            Rename any item
+    ➡️  Move             Move item to another location
+    📋 Copy              Copy item to another location
+
+BOOKMARKS (Ctrl-B):
+    📖 Bookmarks are stored in ~/.config/term-explorer/bookmarks
+    🔖 Select bookmark to navigate to it
+    🗑️  Press Ctrl-D on a bookmark to remove it
+
 CONFIGURATION:
     TERM_EXPLORER_SHOW_HIDDEN=1    Show hidden files (default: 1)
+    TERM_EXPLORER_PREVIEW=1        Show preview panel (default: 1)
+    TERM_EXPLORER_THEME=tokyo-night  Color theme
     EDITOR=vim                     Editor for file editing
+
+AVAILABLE THEMES:
+    tokyo-night (default), dracula, nord, gruvbox, catppuccin, monokai
 
 DEPENDENCIES:
     Required: fzf
-    Optional: bat (syntax highlighting), eza (modern ls)
+    Optional: bat (syntax highlighting), eza (modern ls), fd (fast search)
 
 EXAMPLES:
-    te              Open explorer in current directory
-    te ~/projects   Open explorer in ~/projects
-    te /var/log     Open explorer in /var/log
+    te                              Open explorer in current directory
+    te ~/projects                   Open explorer in ~/projects
+    te /var/log                     Open explorer in /var/log
+    
+    TERM_EXPLORER_THEME=dracula te  Use Dracula theme
+    TERM_EXPLORER_PREVIEW=1 te      Start with preview enabled
 
 EOF
 }

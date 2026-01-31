@@ -2,7 +2,7 @@
 
 Interactive file explorer for Zsh with fuzzy search powered by [fzf](https://github.com/junegunn/fzf).
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Shell](https://img.shields.io/badge/shell-zsh-yellow.svg)
 
@@ -22,18 +22,25 @@ Interactive file explorer for Zsh with fuzzy search powered by [fzf](https://git
                                     │
 ```
 
-<video src="https://github.com/user-attachments/assets/cd2514dd-49d6-41c9-a656-970fe776b68c"></video>
+```
 
 ## Features
 
 - **Fuzzy Search**: Lightning-fast file filtering with fzf
-- **Syntax Highlighting**: File preview with bat/batcat
-- **Modern Listing**: Directory preview with eza
+- **File Icons**: Visual file type identification with emoji icons
 - **Deep Navigation**: Seamlessly navigate into directories
-- **Action Menu**: Edit, copy path, view, or delete files
+- **File Actions**: Edit, copy path, view, or delete files
+- **Directory Actions**: Rename, copy path, or delete directories
+- **Bookmarks**: Save and quickly navigate to favorite directories (Ctrl-B)
+- **Quick Actions**: Create files/directories, rename, move, copy (Ctrl-Q)
+- **Toggle Preview**: Optional file preview panel (Ctrl-P)
+- **Toggle Hidden Files**: Show/hide hidden files on the fly (Alt-.)
+- **Navigation History**: Go back to previous directories (Ctrl-O)
+- **Recursive Search**: Find files anywhere in the tree (Ctrl-F)
+- **Theme Support**: 6 beautiful color themes (Tokyo Night, Dracula, Nord, Gruvbox, Catppuccin, Monokai)
 - **Cross-Platform**: Works on macOS, Linux, and WSL
-- **Tokyo Night Theme**: Beautiful dark color scheme
 - **Zero Config**: Works out of the box
+- **Robust**: Handles spaces in filenames, permission errors, and circular symlinks
 
 ## Requirements
 
@@ -41,10 +48,10 @@ Interactive file explorer for Zsh with fuzzy search powered by [fzf](https://git
 
 - [fzf](https://github.com/junegunn/fzf) - Fuzzy finder
 
-### Optional (Recommended)
+### Optional
 
-- [bat](https://github.com/sharkdp/bat) - Syntax highlighting for file preview
-- [eza](https://github.com/eza-community/eza) - Modern replacement for ls
+- [bat](https://github.com/sharkdp/bat) - Syntax highlighting for file preview and viewing
+- [fd](https://github.com/sharkdp/fd) - Faster recursive file search (Ctrl-F)
 
 ## Installation
 
@@ -54,6 +61,57 @@ Interactive file explorer for Zsh with fuzzy search powered by [fzf](https://git
 git clone https://github.com/YOUR_USERNAME/term-explorer.git
 cd term-explorer
 ./install.sh
+```
+
+### Package Manager Install
+
+#### Homebrew (macOS/Linux)
+
+```bash
+brew install term-explorer
+```
+
+#### AUR (Arch Linux)
+
+```bash
+# Using yay (AUR helper)
+yay -S term-explorer
+
+# Or manually:
+git clone https://aur.archlinux.org/term-explorer.git
+cd term-explorer
+makepkg -si
+```
+
+### Oh-My-Zsh Plugin
+
+```bash
+# Clone into Oh-My-Zsh plugins directory
+git clone https://github.com/YOUR_USERNAME/term-explorer.git \
+  ~/.oh-my-zsh/custom/plugins/term-explorer
+
+# Add to your .zshrc
+plugins=(... term-explorer ...)
+
+# Reload your shell
+source ~/.zshrc
+```
+
+### Using Makefile
+
+```bash
+# Clone the repository
+git clone https://github.com/YOUR_USERNAME/term-explorer.git
+cd term-explorer
+
+# Install system-wide (requires sudo)
+sudo make install
+
+# Or install to user directory
+make install-user
+
+# Uninstall
+sudo make uninstall
 ```
 
 ### Manual Install
@@ -81,35 +139,39 @@ source ~/.zshrc
 #### macOS (Homebrew)
 
 ```bash
-brew install fzf bat eza
+brew install fzf
+
+# Optional: for enhanced features
+brew install bat fd
 ```
 
 #### Ubuntu/Debian
 
 ```bash
 sudo apt update
-sudo apt install fzf bat eza
+sudo apt install fzf
 
-# Note: On Debian/Ubuntu, bat may be installed as 'batcat'
-# The script handles this automatically
+# Optional: for enhanced features
+# Note: On Debian/Ubuntu, bat may be installed as 'batcat', fd as 'fdfind'
+sudo apt install bat fd-find
 ```
 
 #### Arch Linux
 
 ```bash
-sudo pacman -S fzf bat eza
+sudo pacman -S fzf
+
+# Optional: for enhanced features
+sudo pacman -S bat fd
 ```
 
 #### Fedora
 
 ```bash
-sudo dnf install fzf bat eza
-```
+sudo dnf install fzf
 
-#### Alpine Linux
-
-```bash
-apk add fzf bat eza
+# Optional: for enhanced features
+sudo dnf install bat fd-find
 ```
 
 ## Usage
@@ -130,26 +192,64 @@ te /var/log
 
 ### Keyboard Shortcuts
 
-| Key | Action |
-|-----|--------|
-| `Enter` | Enter directory / Open action menu for files |
-| `Esc` | Exit explorer |
-| `Ctrl-R` | Refresh file list |
-| `Ctrl-H` | Go to parent directory |
-| `↑` / `↓` | Navigate list |
-| Type | Fuzzy search filter |
+| Key       | Action                                                   |
+| --------- | -------------------------------------------------------- |
+| `Enter`   | Enter directory / Open action menu for files/directories |
+| `Esc`     | Exit explorer                                            |
+| `Ctrl-R`  | Refresh file list                                        |
+| `Ctrl-H`  | Go to parent directory                                   |
+| `Alt-.`   | Toggle hidden files visibility                           |
+| `Ctrl-P`  | Toggle preview panel                                     |
+| `Ctrl-O`  | Go back to previous directory                            |
+| `Ctrl-F`  | Recursive file search                                    |
+| `Ctrl-B`  | Open bookmarks menu                                      |
+| `Ctrl-Q`  | Quick actions (create, rename, move, copy)               |
+| `↑` / `↓` | Navigate list                                            |
+| Type      | Fuzzy search filter                                      |
 
 ### File Actions Menu
 
 When you select a file, an action menu appears:
 
-| Action | Description |
-|--------|-------------|
-| Edit | Open file in `$EDITOR` (defaults to vim) |
-| Copy absolute path | Copy full path to clipboard |
-| Copy relative path | Copy relative path to clipboard |
-| View | Open file in pager (less/bat) |
-| Delete | Delete file (requires typing 'sim' to confirm) |
+| Action             | Description                                    |
+| ------------------ | ---------------------------------------------- |
+| Edit               | Open file in `$EDITOR` (defaults to vim)       |
+| Copy absolute path | Copy full path to clipboard                    |
+| Copy relative path | Copy relative path to clipboard                |
+| View               | Open file in pager (less/bat)                  |
+| Delete             | Delete file (requires typing 'yes' to confirm) |
+
+### Directory Actions Menu
+
+When you select a directory, an action menu appears:
+
+| Action             | Description                                         |
+| ------------------ | --------------------------------------------------- |
+| Rename             | Rename the directory                                |
+| Copy absolute path | Copy full path to clipboard                         |
+| Copy relative path | Copy relative path to clipboard                     |
+| Delete             | Delete directory (requires typing 'yes' to confirm) |
+
+### Bookmarks (Ctrl-B)
+
+Save your frequently used directories as bookmarks:
+
+- Press `Ctrl-B` to open bookmarks menu
+- Select a bookmark to navigate to it
+- Press `Ctrl-D` on a bookmark to remove it
+- Bookmarks are stored in `~/.config/term-explorer/bookmarks`
+
+### Quick Actions (Ctrl-Q)
+
+Perform common operations quickly:
+
+| Action               | Description                                 |
+| -------------------- | ------------------------------------------- |
+| Create new file      | Create a new file in current directory      |
+| Create new directory | Create a new directory in current directory |
+| Rename item          | Rename any file or directory                |
+| Move item            | Move file/directory to another location     |
+| Copy item            | Copy file/directory to another location     |
 
 ## Configuration
 
@@ -159,41 +259,59 @@ When you select a file, an action menu appears:
 # Show/hide hidden files (default: 1 = show)
 export TERM_EXPLORER_SHOW_HIDDEN=1
 
+# Enable/disable preview panel (default: 1 = on)
+export TERM_EXPLORER_PREVIEW=1
+
+# Set color theme (default: tokyo-night)
+export TERM_EXPLORER_THEME="dracula"
+
 # Set your preferred editor
 export EDITOR=nvim
 ```
 
-### Customizing Colors
+### Available Themes
 
-The script uses the Tokyo Night color theme by default. To customize, modify the `TERM_EXPLORER_FZF_COLORS` variable in `term-explorer.zsh`:
+| Theme         | Description                            |
+| ------------- | -------------------------------------- |
+| `tokyo-night` | Default dark theme with purple accents |
+| `dracula`     | Classic Dracula dark theme             |
+| `nord`        | Cool, bluish Arctic-inspired theme     |
+| `gruvbox`     | Retro groove colors                    |
+| `catppuccin`  | Soothing pastel theme                  |
+| `monokai`     | Classic code editor theme              |
+
+Example usage:
 
 ```bash
-typeset -g TERM_EXPLORER_FZF_COLORS="--color=fg:#c0caf5,bg:#1a1b26,hl:#bb9af7"
-# ... add your custom colors
+# Use Dracula theme for this session
+TERM_EXPLORER_THEME=dracula te
+
+# Or set permanently in .zshrc
+export TERM_EXPLORER_THEME="nord"
 ```
 
 ## File Icons
 
 Term-explorer automatically assigns icons based on file type:
 
-| Icon | Type |
-|------|------|
-| 📁 | Directory |
-| 🔗 | Symbolic link |
-| 🐚 | Shell script |
-| 🐍 | Python |
-| 📜 | JavaScript |
-| 💠 | TypeScript |
-| 📋 | JSON |
-| ⚙️  | YAML/TOML |
-| 📝 | Markdown |
-| 🐳 | Docker |
-| 📦 | Archive |
-| 🖼️  | Image |
-| 🎵 | Audio |
-| 🎬 | Video |
-| 🔐 | Environment file |
-| ⚡ | Executable |
+| Icon | Type             |
+| ---- | ---------------- |
+| 📁   | Directory        |
+| 🔗   | Symbolic link    |
+| 🐚   | Shell script     |
+| 🐍   | Python           |
+| 📜   | JavaScript       |
+| 💠   | TypeScript       |
+| 📋   | JSON             |
+| ⚙️   | YAML/TOML        |
+| 📝   | Markdown         |
+| 🐳   | Docker           |
+| 📦   | Archive          |
+| 🖼️   | Image            |
+| 🎵   | Audio            |
+| 🎬   | Video            |
+| 🔐   | Environment file |
+| ⚡   | Executable       |
 
 ## Troubleshooting
 
@@ -213,9 +331,9 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 ~/.fzf/install
 ```
 
-### Preview not showing syntax highlighting
+### View action not showing syntax highlighting
 
-Install bat:
+Install bat for enhanced file viewing:
 
 ```bash
 # macOS
@@ -223,21 +341,6 @@ brew install bat
 
 # Ubuntu/Debian (may install as 'batcat')
 sudo apt install bat
-```
-
-### Directory listing looks basic
-
-Install eza:
-
-```bash
-# macOS
-brew install eza
-
-# Ubuntu/Debian
-sudo apt install eza
-
-# Or via cargo
-cargo install eza
 ```
 
 ### Clipboard not working
@@ -256,13 +359,12 @@ sudo apt install wl-clipboard
 
 ### Icons not displaying correctly
 
-Make sure you're using a [Nerd Font](https://www.nerdfonts.com/) in your terminal:
+Make sure your terminal supports Unicode/emoji. For best results, use a modern terminal emulator like:
 
-```bash
-# macOS
-brew tap homebrew/cask-fonts
-brew install --cask font-hack-nerd-font
-```
+- iTerm2 (macOS)
+- Alacritty
+- Kitty
+- Windows Terminal
 
 ## Helper Commands
 
@@ -272,15 +374,35 @@ term-explorer-version
 
 # Show help
 term-explorer-help
+
+# Update to latest version (if cloned via git)
+./update.sh
+
+# Or use make update
+make update
 ```
 
 ## Uninstallation
 
 ```bash
-# Remove the source line from .zshrc
-# Then delete the installation directory
+# Automatic uninstall (recommended)
+./uninstall.sh
+
+# Or use make
+make uninstall
+
+# Or manual:
+# 1. Remove the source line from .zshrc
+# 2. Delete the installation directory
 rm -rf ~/.config/term-explorer
 ```
+
+The uninstall script will:
+
+- Remove the `te` symlink
+- Preserve bookmarks (ask before deleting)
+- Remove term-explorer references from `.zshrc`
+- Clean up Oh-My-Zsh plugin if installed
 
 ## Contributing
 

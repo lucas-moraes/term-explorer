@@ -1,0 +1,206 @@
+# CI/CD Pipeline for term-explorer
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  # ============================================================================
+  # Lint job - ShellCheck
+  # ============================================================================
+  lint:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install ShellCheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+
+      - name: Run ShellCheck
+        run: |
+          shellcheck --version
+          shellcheck --shell=zsh term-explorer.zsh
+          shellcheck --shell=bash install.sh uninstall.sh update.sh
+
+  # ============================================================================
+  # Syntax check job - zsh -n
+  # ============================================================================
+  syntax:
+    name: Syntax Check
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        zsh-version: ['5.8', '5.9']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Zsh (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zsh
+
+      - name: Check Zsh version
+        run: |
+          zsh --version
+
+      - name: Run syntax check
+        run: |
+          zsh -n term-explorer.zsh
+          echo "✓ Syntax check passed"
+
+  # ============================================================================
+  # Test job - Basic functionality tests
+  # ============================================================================
+  test:
+    name: Basic Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zsh fzf
+
+      - name: Source script
+        run: |
+          zsh -c 'source term-explorer.zsh && echo "Script loaded successfully"'
+
+      - name: Check version
+        run: |
+          zsh -c 'source term-explorer.zsh && echo $TERM_EXPLORER_VERSION'
+
+      - name: Check functions exist
+        run: |
+          zsh -c 'source term-explorer.zsh && \
+          declare -f _te_check_deps > /dev/null && \
+          declare -f _te_get_icon > /dev/null && \
+          declare -f term-explorer > /dev/null && \
+          echo "✓ All required functions exist"'
+
+  # ============================================================================
+  # Install/Uninstall test
+  # ============================================================================
+  install-test:
+    name: Install/Uninstall Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install via Makefile
+        run: |
+          sudo make install-user
+
+      - name: Verify installation
+        run: |
+          test -f $HOME/.config/term-explorer/term-explorer.zsh
+          test -f $HOME/.local/bin/te
+          echo "✓ Installation successful"
+
+      - name: Test binary
+        run: |
+          source $HOME/.config/term-explorer/term-explorer.zsh
+          term-explorer-version
+
+      - name: Uninstall
+        run: |
+          sudo make uninstall
+
+      - name: Verify uninstallation
+        run: |
+          ! test -f $HOME/.local/bin/te || (echo "Binary still exists" && exit 1)
+          echo "✓ Uninstallation successful"
+
+  # ============================================================================
+  # Integration test - Install via install.sh
+  # ============================================================================
+  install-script-test:
+    name: install.sh Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run install.sh (non-interactive)
+        run: |
+          echo "$HOME/.config/term-explorer" | ./install.sh
+
+      - name: Verify installation
+        run: |
+          test -f $HOME/.config/term-explorer/term-explorer.zsh
+          echo "✓ install.sh successful"
+
+      - name: Source installed script
+        run: |
+          source $HOME/.config/term-explorer/term-explorer.zsh
+          term-explorer-help
+
+  # ============================================================================
+  # Security scan - Dependency check
+  # ============================================================================
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # ============================================================================
+  # Release preparation
+  # ============================================================================
+  prepare-release:
+    name: Prepare Release
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [lint, syntax, test, install-test]
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version
+        id: get_version
+        run: |
+          VERSION=$(grep 'TERM_EXPLORER_VERSION=' term-explorer.zsh | head -1 | cut -d'"' -f2)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Create archive
+        run: |
+          tar -czf term-explorer-${{ steps.get_version.outputs.version }}.tar.gz \
+            term-explorer.zsh install.sh uninstall.sh update.sh \
+            Makefile README.md LICENSE CHANGELOG.md .github/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: term-explorer-${{ steps.get_version.outputs.version }}
+          path: term-explorer-${{ steps.get_version.outputs.version }}.tar.gz
+          retention-days: 30

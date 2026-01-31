@@ -203,7 +203,7 @@ main() {
     
     echo ""
     echo -e "${GREEN}╭──────────────────────────────────────────────────────────────────╮${NC}"
-    echo -e "${GREEN}│${NC}              ${BOLD}Installation complete!${NC}                            ${GREEN}│${NC}"
+    echo -e "${GREEN}│${NC}              ${BOLD}Installation complete!${NC}                              ${GREEN}│${NC}"
     echo -e "${GREEN}╰──────────────────────────────────────────────────────────────────╯${NC}"
     echo ""
     echo "To start using term-explorer, either:"
