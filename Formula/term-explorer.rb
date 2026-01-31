@@ -35,7 +35,7 @@ class TermExplorer < Formula
 
       source "$SCRIPT"
 
-      if typeset -f term-explorer >/dev/null 2>&1 || whence term-explorer >/dev/null 2>&1; then
+      if whence term-explorer >/dev/null 2>&1; then
         term-explorer "$@"
       else
         printf '%s\n' "term-explorer: main function not found after sourcing $SCRIPT" >&2
