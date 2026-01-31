@@ -140,71 +140,6 @@ _te_get_bat() {
 }
 
 # ----------------------------------------------------------------------------
-# _te_preview: Generate preview for file/directory
-# Arguments: $1 = item (with icon prefix)
-# ----------------------------------------------------------------------------
-_te_preview() {
-    local selection="$1"
-    local item="${selection#* }"  # Remove icon prefix
-    
-    # Parent directory
-    if [[ "$item" == ".." ]]; then
-        echo "📁 Parent directory"
-        echo ""
-        if command -v eza &>/dev/null; then
-            eza -la --color=always --icons -- ".." 2>/dev/null | head -20
-        else
-            ls -la -- ".." 2>/dev/null | head -20
-        fi
-        return
-    fi
-    
-    # Directory
-    if [[ -d "$item" ]]; then
-        echo "📁 Directory: $item"
-        echo ""
-        if command -v eza &>/dev/null; then
-            eza -la --color=always --icons -- "$item" 2>/dev/null | head -30
-        else
-            ls -la -- "$item" 2>/dev/null | head -30
-        fi
-        return
-    fi
-    
-    # Symbolic link
-    if [[ -L "$item" ]]; then
-        local target=$(readlink -- "$item" 2>/dev/null)
-        echo "🔗 Symbolic link: $item"
-        echo "   → $target"
-        echo ""
-        if [[ -e "$item" ]]; then
-            _te_preview "_ $target"
-        else
-            echo "⚠️  Broken link"
-        fi
-        return
-    fi
-    
-    # Regular file
-    if [[ -f "$item" ]]; then
-        local size=$(du -h -- "$item" 2>/dev/null | cut -f1)
-        local lines=$(wc -l < "$item" 2>/dev/null | tr -d ' ')
-        echo "📄 File: $item"
-        echo "   Size: $size | Lines: $lines"
-        echo ""
-        
-        local bat_cmd=$(_te_get_bat)
-        if [[ -n "$bat_cmd" ]]; then
-            "$bat_cmd" --color=always --style=numbers --line-range=:50 -- "$item" 2>/dev/null
-        else
-            head -50 -- "$item" 2>/dev/null
-        fi
-        return
-    fi
-    
-    echo "❓ Unknown item: $item"
-}
-
 # ----------------------------------------------------------------------------
 # _te_history_push: Add directory to navigation history
 # Arguments: $1 = directory path
@@ -369,8 +304,7 @@ _te_bookmarks_open() {
             --border=rounded \
             --prompt="🔖 Bookmark: " \
             --header="Select a bookmark (Tab to see actions)" \
-            --bind="ctrl-d:execute-silent(echo {..} | sed 's/^.* //' | xargs -r _te_bookmarks_remove && reload)+reload(_te_bookmarks_load | nl -w2 -s '. ' | sed 's/^/🔖 /')+change-header(ctrl-d: Removed bookmark)" \
-            --bind="ctrl-d:execute-silent(echo {..} | sed 's/^.* //' | xargs -r _te_bookmarks_remove && reload)+reload(_te_bookmarks_load | nl -w2 -s '. ' | sed 's/^/🔖 /')+change-header(ctrl-d: Removed bookmark)" \
+            --bind="ctrl-d:execute-silent(echo {..} | sed 's/^.* //' | xargs -r -I {} sh -c 'BOOKMARK_FILE=\"\${XDG_CONFIG_HOME:-\$HOME/.config}/term-explorer/bookmarks\"; TMP_FILE=\"\${BOOKMARK_FILE}.tmp\"; if [ -f \"\$BOOKMARK_FILE\" ]; then grep -vFx \"{}\" \"\$BOOKMARK_FILE\" > \"\$TMP_FILE\" && mv \"\$TMP_FILE\" \"\$BOOKMARK_FILE\"; fi')+reload(_te_bookmarks_load | nl -w2 -s '. ' | sed 's/^/🔖 /')+change-header(ctrl-d: Removed bookmark)" \
             $TERM_EXPLORER_FZF_COLORS \
             --ansi)
     

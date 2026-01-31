@@ -23,7 +23,8 @@ package() {
   # Install wrapper script
   install -Dm755 <(cat <<'EOF'
 #!/usr/bin/env zsh
-source /usr/share/term-explorer/term-explorer.zsh "$@"
+source /usr/share/term-explorer/term-explorer.zsh
+term-explorer "$@"
 EOF
   ) "$pkgdir/usr/bin/te"
 
