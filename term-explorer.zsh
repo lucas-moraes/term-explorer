@@ -369,7 +369,7 @@ _te_bookmarks_open() {
             --border=rounded \
             --prompt="🔖 Bookmark: " \
             --header="Select a bookmark (Tab to see actions)" \
-            --bind="ctrl-d:execute-silent(echo {..} | sed 's/^.* //' | xargs -r -I {} sh -c 'BOOKMARK_FILE=\"\${TERM_EXPLORER_BOOKMARK_FILE:-\$HOME/.term-explorer-bookmarks}\"; TMP_FILE=\"\${BOOKMARK_FILE}.tmp\"; if [ -f \"\$BOOKMARK_FILE\" ]; then grep -vFx \"{}\" \"\$BOOKMARK_FILE\" > \"\$TMP_FILE\" && mv \"\$TMP_FILE\" \"\$BOOKMARK_FILE\"; fi')+reload(_te_bookmarks_load | nl -w2 -s '. ' | sed 's/^/🔖 /')+change-header(ctrl-d: Removed bookmark)" \
+            --bind="ctrl-d:execute-silent(echo {..} | sed 's/^.* //' | xargs -r -I {} sh -c 'BOOKMARK_FILE=\"\${TERM_EXPLORER_BOOKMARK_FILE:-\$HOME/.term-explorer-bookmarks}\"; TMP_FILE=\"\${BOOKMARK_FILE}.tmp\"; if [ -f \"\$BOOKMARK_FILE\" ]; then if grep -vFx \"{}\" \"\$BOOKMARK_FILE\" > \"\$TMP_FILE\"; then mv \"\$TMP_FILE\" \"\$BOOKMARK_FILE\"; else rm -f \"\$TMP_FILE\"; fi; fi')+reload(_te_bookmarks_load | nl -w2 -s '. ' | sed 's/^/🔖 /')+change-header(ctrl-d: Removed bookmark)" \
             $TERM_EXPLORER_FZF_COLORS \
             --ansi)
     
