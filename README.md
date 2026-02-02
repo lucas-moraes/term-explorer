@@ -23,7 +23,10 @@ Interactive file explorer for Zsh with fuzzy search powered by [fzf](https://git
                                     │
 ```
 
-```
+<video src="https://github.com/user-attachments/assets/0acf2d1a-67ca-456a-b4cf-078a6fe82bcc" width="400"></video>
+
+
+
 
 ## Features
 
