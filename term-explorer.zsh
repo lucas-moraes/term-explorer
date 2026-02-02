@@ -2,8 +2,8 @@
 # ============================================================================
 # TERM-EXPLORER - Interactive File Explorer for Zsh
 # ============================================================================
-# Version: 1.0.0
-# Repository: https://github.com/YOUR_USERNAME/term-explorer
+# Version: 2.1.1
+# Repository: https://github.com/lucas-moraes/term-explorer
 # License: MIT
 #
 # Dependencies:
@@ -18,10 +18,12 @@
 # ----------------------------------------------------------------------------
 # Global Configuration
 # ----------------------------------------------------------------------------
-typeset -g TERM_EXPLORER_VERSION="2.1.0"
+typeset -g TERM_EXPLORER_VERSION="2.1.1"
 typeset -g TERM_EXPLORER_SHOW_HIDDEN=${TERM_EXPLORER_SHOW_HIDDEN:-1}
 typeset -g TERM_EXPLORER_PREVIEW=${TERM_EXPLORER_PREVIEW:-1}
 typeset -g TERM_EXPLORER_THEME=${TERM_EXPLORER_THEME:-"tokyo-night"}
+typeset -g TERM_EXPLORER_HEIGHT=${TERM_EXPLORER_HEIGHT:-60}
+typeset -g TERM_EXPLORER_HEIGHT=${TERM_EXPLORER_HEIGHT:-60}
 
 # Navigation history stack
 typeset -ga _TE_HISTORY=()
@@ -961,12 +963,15 @@ term-explorer() {
         
         # Build header with keyboard shortcuts
         local header="
-╭───────────────────────────────────────────────────────────--────────────╮
-│ Enter: Select │ Esc: Exit    │ ^R: Refresh │ ^H: Parent │ ^B: Bookmarks │
-│ M-.: Hidden   │ ^P: Preview  │ ^O: Back    │ ^F: Search │ ^Q: Quick Act │
-╰─────────────────────────────────────────────────────────────--──────────╯
+╭──────────────────────────────────────────────────────────────────────╮
+│ Enter: Open │ Esc: Exit   │ ^R: Refresh │ ^H: Parent │ ^B: Bookmarks │
+│ M-.: Hidden │ ^P: Preview │ ^O: Back    │ ^F: Search │ Tab: Actions  │
+╰──────────────────────────────────────────────────────────────────────╯
  📂 $PWD
- 📊 $item_count items  $hidden_status $preview_status $history_count"
+ 📊 $item_count items  $hidden_status $preview_status $history_count
+   
+   
+ "
 
         # Build preview command
         local preview_cmd=""
@@ -983,15 +988,15 @@ term-explorer() {
 
         # Run fzf with dynamic options
         local fzf_opts=(
-            --height=80%
-            --layout=reverse
+            --height=${TERM_EXPLORER_HEIGHT:-60}%
+            --layout=default
             --border=rounded
             --prompt="❯ "
             --header="$header"
             --header-lines=0
             --bind="ctrl-r:reload(_te_list $show_hidden)"
             --bind="ctrl-h:become(echo 'ctrl-h'$'\\n''📁 ..')"
-            --expect="ctrl-h,alt-.,ctrl-p,ctrl-o,ctrl-f,ctrl-b,ctrl-q"
+            --expect="ctrl-h,alt-.,ctrl-p,ctrl-o,ctrl-f,ctrl-b,tab"
             $TERM_EXPLORER_FZF_COLORS
             --ansi
         )
@@ -1078,12 +1083,6 @@ term-explorer() {
             continue
         fi
         
-        # Handle Ctrl-Q (quick actions)
-        if [[ "$expected_key" == "ctrl-q" ]]; then
-            _te_quick_actions
-            continue
-        fi
-        
         # Handle Ctrl-H
         if [[ "$expected_key" == "ctrl-h" || "$selection" == "📁 .." ]]; then
             if [[ "$PWD" != "/" ]]; then
@@ -1104,6 +1103,20 @@ term-explorer() {
         # Extract item name (remove icon prefix)
         item="${selection#* }"
         
+        # Handle Tab (directory or quick actions)
+        if [[ "$expected_key" == "tab" ]]; then
+            local tab_item="${selection#* }"
+            if [[ -z "$tab_item" ]]; then
+                continue
+            fi
+            if [[ -d "$tab_item" ]]; then
+                _te_dir_actions "$tab_item"
+            else
+                _te_quick_actions
+            fi
+            continue
+        fi
+
         # Handle selection
         if [[ "$item" == ".." ]]; then
             # Go up one level
@@ -1113,12 +1126,14 @@ term-explorer() {
             fi
             
         elif [[ -d "$item" ]]; then
-            # Show directory action menu
-            _te_dir_actions "$item"
-            # Check read permission before entering (user can choose from action menu)
+            # Enter directory on Enter
             if [[ -r "$item" ]]; then
                 _te_history_push "$PWD"
                 cd -- "$item"
+                continue
+            else
+                print -P "%F{red}❌ Permission denied:%f $item"
+                sleep 1
             fi
             
         elif [[ -f "$item" ]]; then

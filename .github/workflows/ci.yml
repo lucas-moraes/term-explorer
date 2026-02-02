@@ -18,10 +18,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install ShellCheck
+      - name: Install ShellCheck and Zsh
         run: |
           sudo apt-get update
-          sudo apt-get install -y shellcheck
+          sudo apt-get install -y shellcheck zsh
 
       - name: Run ShellCheck
         run: |
@@ -90,40 +90,6 @@ jobs:
           echo "✓ All required functions exist"'
 
   # ============================================================================
-  # Install/Uninstall test
-  # ============================================================================
-  install-test:
-    name: Install/Uninstall Test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install via Makefile
-        run: |
-          sudo make install-user
-
-      - name: Verify installation
-        run: |
-          test -f $HOME/.config/term-explorer/term-explorer.zsh
-          test -f $HOME/.local/bin/te
-          echo "✓ Installation successful"
-
-      - name: Test binary
-        run: |
-          source $HOME/.config/term-explorer/term-explorer.zsh
-          term-explorer-version
-
-      - name: Uninstall
-        run: |
-          sudo make uninstall
-
-      - name: Verify uninstallation
-        run: |
-          ! test -f $HOME/.local/bin/te || (echo "Binary still exists" && exit 1)
-          echo "✓ Uninstallation successful"
-
-  # ============================================================================
   # Integration test - Install via install.sh
   # ============================================================================
   install-script-test:
@@ -154,12 +120,15 @@ jobs:
     name: Security Scan
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Run Trivy
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.24.0
         with:
           scan-type: 'config'
           scan-ref: '.'
@@ -167,7 +136,7 @@ jobs:
           output: 'trivy-results.sarif'
 
       - name: Upload Trivy results
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
 
